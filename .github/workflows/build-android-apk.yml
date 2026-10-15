@@ -73,6 +73,48 @@ jobs:
           test -f app/src/main/AndroidManifest.xml
           echo "ABC QUEST source is ready."
 
+      - name: Apply mobile touch scrolling and immersive Android fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp android-patches/MainActivity.java app/src/main/java/com/abcquest/kids/MainActivity.java
+          cp android-patches/mobile-fixes.css app/src/main/assets/mobile-fixes.css
+          cp android-patches/offline-audio.js app/src/main/assets/offline-audio.js
+          # Bundle human female voice recordings when provided in android-audio/.
+          mkdir -p app/src/main/assets/audio
+          if [ -d android-audio ]; then
+            cp -a android-audio/. app/src/main/assets/audio/
+          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          assets = Path("app/src/main/assets")
+          audio = assets / "audio"
+          manifest = {}
+          for category in ("names", "phonemes", "words"):
+              folder = audio / category
+              mapping = {}
+              if folder.exists():
+                  for file in folder.iterdir():
+                      if file.is_file() and file.suffix.lower() in (".mp3", ".ogg", ".m4a", ".wav"):
+                          name = file.stem.upper() if category != "words" else file.stem.lower()
+                          mapping[name] = f"audio/{category}/{file.name}"
+              manifest[category] = mapping
+          (audio / "manifest.js").write_text(
+              "window.ABC_QUEST_AUDIO=" + json.dumps(manifest, ensure_ascii=False) + ";",
+              encoding="utf-8")
+          html_path = assets / "index.html"
+          html = html_path.read_text(encoding="utf-8")
+          html = html.replace("</head>", '<link rel="stylesheet" href="mobile-fixes.css"></head>', 1)
+          html = html.replace("</body>",
+              '<script src="audio/manifest.js"></script>'
+              '<script src="offline-audio.js"></script></body>', 1)
+          html_path.write_text(html, encoding="utf-8")
+          print("Prepared recordings:", {key: len(value) for key,value in manifest.items()})
+          PY
+          sed -i 's/versionCode 7/versionCode 8/' app/build.gradle
+          sed -i "s/versionName '7.0'/versionName '7.1'/" app/build.gradle
+
       - name: Build installable Android APK
         run: gradle --no-daemon :app:assembleDebug
 
