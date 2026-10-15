@@ -1,15 +1,18 @@
-# ABC QUEST — Android
+# ABC QUEST — בניית אפליקציית Android
 
-משחק לימוד אותיות וצלילים באנגלית לילדים דוברי עברית.
+פרויקט לימודי לילדים דוברי עברית: 26 אותיות באנגלית, משחקים, גביעים, קרדיטים, 15 דמויות ו־60 סקינים.
 
-## בניית APK דרך GitHub Actions
+## הפקת APK באמצעות GitHub Actions
 
-1. העלה לשורש המאגר את **הקובץ** `ABC_QUEST_Android_v7_פרויקט_לבניית_APK.zip` (כקובץ ZIP, בלי לחלץ).
-2. עבור ללשונית **Actions**.
-3. בחר **Build ABC QUEST APK** והפעל **Run workflow**. התהליך מופעל גם עם כל עדכון לענף main.
-4. לאחר הצלחת הבנייה, הורד את **ABC_QUEST_Android_APK** מתוך Artifacts.
-5. חלץ את ה-ZIP שהתקבל והתקן את `ABC_QUEST_v7.apk` בטלפון.
+1. הורד מצ'אט ChatGPT את `ABC_QUEST_Android_v7_פרויקט_לבניית_APK.zip`.
+2. במאגר זה לחץ **Add file → Upload files** והעלה את קובץ ה־ZIP בשלמותו **בלי לחלץ אותו**.
+3. לחץ **Commit changes** והמתן לתהליך הבנייה בלשונית [Actions](../../actions/workflows/build-android-apk.yml). אפשר גם להפעיל **Run workflow** ידנית.
+4. כשהתהליך **Build ABC QUEST Android APK** מסומן בירוק, פתח את ההרצה ובחר ב־**Artifacts → ABC_QUEST_v7_APK**.
+5. הורד את קובץ הארטיפקט (ZIP), חלץ אותו; בתוכו נמצא **app-debug.apk**.
+6. העבר את `app-debug.apk` לטלפון אנדרואיד, פתח דרך Files ואשר התקנה ממקור זה אם תתבקש.
 
-אין צורך לפרסם ב-Google Play. APK זה נחתם בחתימת debug לבדיקות מקומיות בלבד.
+**הערה:** כל שינוי במאגר מפעיל את תהליך הבנייה. עד להעלאת ארכיון פרויקט Android, הבנייה תיכשל בהודעת **Upload the Android project ZIP**. זו התנהגות צפויה.
 
-**חשוב:** המשחק מיועד לילדים. אין להעלות קבצי התקדמות אישיים של ילדים למאגר ציבורי.
+הפרויקט מכיל WebView עם קובצי המשחק המוטמעים. האפליקציה נבנית ב־Java 17, Android SDK 35 ו־Gradle 8.9. APK בגרסת debug מיועד לבדיקה מקומית בלבד ולא לפרסום ב־Google Play.
+
+**פרטיות:** אין להעלות נתוני התקדמות אישיים של ילדים. המאגר כרגע ציבורי. אפשר לשנות ל־Private ב־Settings → General → Danger Zone → Change repository visibility.
