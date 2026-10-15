@@ -1,4 +1,5 @@
 name: Build ABC QUEST Android APK
+
 on:
   push:
     branches: [main]
@@ -10,28 +11,39 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Java 17
+
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - name: Android SDK
-        uses: android-actions/setup-android@v3
-      - name: Gradle 8.9
+
+      - name: Set up Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Install Android SDK components
-        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          sdkmanager --version
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
       - name: Locate and extract ABC QUEST project
         shell: bash
         run: |
           set -euo pipefail
           if [ -f app/build.gradle ] && [ -f settings.gradle ]; then
-            echo "Android project is at repository root."
+            echo "Android project is already at repository root."
           elif [ -f ABC_QUEST_Android_v7/app/build.gradle ]; then
             cp -a ABC_QUEST_Android_v7/. .
           else
@@ -40,7 +52,7 @@ jobs:
               echo "::error::Upload the Android project ZIP to the repository root."
               exit 1
             fi
-            echo "Using project archive: $ZIP"
+            echo "Using Android project archive: $ZIP"
             mkdir -p /tmp/abcquest-source
             unzip -q "$ZIP" -d /tmp/abcquest-source
             PROJECT="$(find /tmp/abcquest-source -type f -name settings.gradle -print -quit)"
@@ -54,9 +66,11 @@ jobs:
           test -f app/src/main/assets/index.html
           test -f app/src/main/AndroidManifest.xml
           echo "ABC QUEST source is ready."
+
       - name: Build installable Android APK
         run: gradle --no-daemon :app:assembleDebug
-      - name: Upload installable APK
+
+      - name: Upload APK for Android
         uses: actions/upload-artifact@v4
         with:
           name: ABC_QUEST_v7_APK
