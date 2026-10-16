@@ -70,7 +70,6 @@ change('st.wins/7','st.wins/10')
 change('st.days/2','st.days/3')
 change(chr(36)+'{st.wins}/7',chr(36)+'{Math.min(st.wins,10)}/10',3)
 change('$'+'{st.days}/2','$'+'{Math.min(st.days,3)}/3',2)
-change('7 ניצחונות','10 ניצחונות')
 change('עד 4 ניצחונות מזכים ביום בכל עולם. משחקים רגילים ממשיכים לפעול ללא הגבלה.',
  '4 ניצחונות ראשונים ביום מקדמים את משימות העולם ומעניקים פרס מלא. מהמשחק החמישי מקבלים חצי גביעים וקרדיטים.')
 change('A maximum of 4 qualified rounds per world/day count towards hero quests.',
