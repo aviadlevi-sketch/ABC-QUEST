@@ -3,6 +3,9 @@ name: Build ABC QUEST Android APK
 on:
   push:
     branches: [main]
+    paths:
+      - 'ABC_QUEST_Android_v73_*.zip'
+      - '.github/workflows/build-android-apk.yml'
   workflow_dispatch:
 
 permissions:
@@ -39,92 +42,43 @@ jobs:
             echo "::error::Android SDK command-line tools not found."
             exit 1
           fi
-          echo "Using SDK manager: $SDKMANAGER"
           "$SDKMANAGER" --version
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Locate and extract ABC QUEST project
+      - name: Extract ABC QUEST 7.3 Android preview
         shell: bash
         run: |
           set -euo pipefail
-          if [ -f app/build.gradle ] && [ -f settings.gradle ]; then
-            echo "Android project is already at repository root."
-          elif [ -f ABC_QUEST_Android_v7/app/build.gradle ]; then
-            cp -a ABC_QUEST_Android_v7/. .
-          else
-            ZIP="$(find . -maxdepth 2 -type f -iname '*.zip' | head -n 1)"
-            if [ -z "$ZIP" ]; then
-              echo "::error::Upload the Android project ZIP to the repository root."
-              exit 1
-            fi
-            echo "Using Android project archive: $ZIP"
-            mkdir -p /tmp/abcquest-source
-            unzip -q "$ZIP" -d /tmp/abcquest-source
-            PROJECT="$(find /tmp/abcquest-source -type f -name settings.gradle -print -quit)"
-            if [ -z "$PROJECT" ]; then
-              echo "::error::Archive does not contain settings.gradle"
-              exit 1
-            fi
-            PROJECT_DIR="$(dirname "$PROJECT")"
-            cp -a "$PROJECT_DIR"/. .
+          ZIP="$(find . -maxdepth 2 -type f -name 'ABC_QUEST_Android_v73_*.zip' -print -quit)"
+          if [ -z "$ZIP" ]; then
+            echo "::error::Please upload ABC_QUEST_Android_v73_להעלאה_GitHub.zip to the repository root."
+            exit 1
           fi
+          mkdir -p /tmp/abc-quest-android-v73
+          echo "Extracting $ZIP"
+          unzip -q "$ZIP" -d /tmp/abc-quest-android-v73
+          PROJECT="$(find /tmp/abc-quest-android-v73 -type f -name settings.gradle -print -quit)"
+          if [ -z "$PROJECT" ]; then
+            echo "::error::Archive does not contain an Android Gradle project."
+            exit 1
+          fi
+          cp -a "$(dirname "$PROJECT")"/. .
           test -f app/src/main/assets/index.html
-          test -f app/src/main/AndroidManifest.xml
-          echo "ABC QUEST source is ready."
+          test -f app/src/main/assets/adventure_v73.js
+          test -f app/src/main/assets/astra_skins.js
+          test -f app/src/main/assets/adventure_v73.css
+          test -f app/abcquest-test.keystore
+          grep -q "versionName '7.3-preview'" app/build.gradle
+          echo "Loaded complete version 7.3. No old patches applied."
 
-      - name: Apply mobile touch scrolling and immersive Android fixes
-        shell: bash
-        run: |
-          set -euo pipefail
-          cp android-patches/MainActivity.java app/src/main/java/com/abcquest/kids/MainActivity.java
-          cp android-patches/mobile-fixes.css app/src/main/assets/mobile-fixes.css
-          cp android-patches/offline-audio.js app/src/main/assets/offline-audio.js
-          cp android-patches/v72-game-fixes.js app/src/main/assets/v72-game-fixes.js
-          cp android-patches/v72-game-fixes.css app/src/main/assets/v72-game-fixes.css
-          # Bundle human female voice recordings when provided in android-audio/.
-          mkdir -p app/src/main/assets/audio
-          if [ -d android-audio ]; then
-            cp -a android-audio/. app/src/main/assets/audio/
-          fi
-          python3 - <<'PY'
-          from pathlib import Path
-          import json
-          assets = Path("app/src/main/assets")
-          audio = assets / "audio"
-          manifest = {}
-          for category in ("names", "phonemes", "words"):
-              folder = audio / category
-              mapping = {}
-              if folder.exists():
-                  for file in folder.iterdir():
-                      if file.is_file() and file.suffix.lower() in (".mp3", ".ogg", ".m4a", ".wav"):
-                          name = file.stem.upper() if category != "words" else file.stem.lower()
-                          mapping[name] = f"audio/{category}/{file.name}"
-              manifest[category] = mapping
-          (audio / "manifest.js").write_text(
-              "window.ABC_QUEST_AUDIO=" + json.dumps(manifest, ensure_ascii=False) + ";",
-              encoding="utf-8")
-          html_path = assets / "index.html"
-          html = html_path.read_text(encoding="utf-8")
-          html = html.replace("</head>", '<link rel="stylesheet" href="mobile-fixes.css"><link rel="stylesheet" href="v72-game-fixes.css"></head>', 1)
-          html = html.replace("</body>",
-              '<script src="audio/manifest.js"></script>'
-              '<script src="offline-audio.js"></script>'
-              '<script src="v72-game-fixes.js"></script></body>', 1)
-          html_path.write_text(html, encoding="utf-8")
-          print("Prepared recordings:", {key: len(value) for key,value in manifest.items()})
-          PY
-          sed -i 's/versionCode 7/versionCode 9/' app/build.gradle
-          sed -i "s/versionName '7.0'/versionName '7.2'/" app/build.gradle
-
-      - name: Build installable Android APK
+      - name: Build signed test APK
         run: gradle --no-daemon :app:assembleDebug
 
-      - name: Upload APK for Android
+      - name: Publish Android test installer
         uses: actions/upload-artifact@v4
         with:
-          name: ABC_QUEST_v7_2_APK
+          name: ABC_QUEST_v7_3_TEST_APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
