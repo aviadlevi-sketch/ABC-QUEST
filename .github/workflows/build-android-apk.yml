@@ -16,21 +16,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout repository
+      - name: Checkout GitHub repository
         uses: actions/checkout@v4
 
-      - name: Java 17
+      - name: Install Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Gradle 8.9
+      - name: Install Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
-      - name: Android SDK
+      - name: Prepare Android SDK 35
         shell: bash
         run: |
           set -euo pipefail
@@ -38,36 +38,40 @@ jobs:
           echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
           test -n "$SDKMANAGER"
+          "$SDKMANAGER" --version
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Extract latest ABC QUEST v7.5 Android project
+      - name: Extract uploaded 7.5 game
         shell: bash
         run: |
           set -euo pipefail
           ZIP="$(find . -maxdepth 2 -type f -name 'ABC_QUEST_Android_v75_*.zip' -print -quit)"
           if [ -z "$ZIP" ]; then
-            echo "::error::Please upload the complete v7.5 Android project ZIP to the repository root."
+            echo "::error::Upload ABC_QUEST_Android_v75_להעלאה_GitHub.zip to the repository root."
             exit 1
           fi
-          mkdir -p /tmp/abcquest-v75
-          unzip -q "$ZIP" -d /tmp/abcquest-v75
-          PROJECT="$(find /tmp/abcquest-v75 -type f -name settings.gradle -print -quit)"
-          test -n "$PROJECT"
+          mkdir -p /tmp/abc-quest-android-v75
+          unzip -q "$ZIP" -d /tmp/abc-quest-android-v75
+          PROJECT="$(find /tmp/abc-quest-android-v75 -type f -name settings.gradle -print -quit)"
+          if [ -z "$PROJECT" ]; then
+            echo "::error::No Android project was found inside the archive."
+            exit 1
+          fi
           cp -a "$(dirname "$PROJECT")"/. .
           test -f app/src/main/assets/index.html
           test -f app/src/main/assets/economy_v75.css
           test -f app/src/main/assets/branding/abc_quest_logo.webp
-          test -f app/src/main/res/drawable-nodpi/abc_quest_icon.png
+          test -f app/src/main/assets/adventure_v73.js
           test -f app/abcquest-test.keystore
+          test "$(find app/src/main/assets/images -name '*.jpg' | wc -l)" -eq 64
           grep -q "versionName '7.5-preview'" app/build.gradle
-          grep -q "const FAME_TROPHIES=" app/src/main/assets/adventure_v73.js
-          echo "ABC QUEST 7.5 validated"
+          echo "Version 7.5 source, 64 skins, branding, and test signing key verified."
 
-      - name: Build Android APK
+      - name: Build signed debug APK for local Android tests
         run: gradle --no-daemon :app:assembleDebug
 
-      - name: Upload Android installable APK
+      - name: Publish APK for installation
         uses: actions/upload-artifact@v4
         with:
           name: ABC_QUEST_v7_5_TEST_APK
