@@ -1,0 +1,64 @@
+name: ABC QUEST - ElevenLabs voice preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      voice_id:
+        description: "ElevenLabs voice ID copied from My Voices (not the API key)"
+        required: true
+        type: string
+      model_id:
+        description: "ElevenLabs model for letter names and words"
+        required: true
+        default: eleven_multilingual_v2
+        type: choice
+        options:
+          - eleven_multilingual_v2
+          - eleven_v4
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Check out ABC QUEST
+        uses: actions/checkout@v4
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate exactly 15 voice samples
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          VOICE_ID: ${{ inputs.voice_id }}
+          MODEL_ID: ${{ inputs.model_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$ELEVENLABS_API_KEY" ]; then
+            echo "::error::Create repository Actions secret ELEVENLABS_API_KEY first."
+            exit 1
+          fi
+          ZIP="$(find . -maxdepth 2 -type f -name 'ABC_QUEST_Android_v75_*.zip' -print -quit)"
+          if [ -z "$ZIP" ]; then
+            echo "::error::ABC QUEST Android 7.5 archive not found."
+            exit 1
+          fi
+          python voice/generate_previews.py \
+            --archive "$ZIP" \
+            --output "voice-preview" \
+            --voice-id "$VOICE_ID" \
+            --model-id "$MODEL_ID"
+
+      - name: Download the voice samples
+        uses: actions/upload-artifact@v4
+        with:
+          name: ABC_QUEST_ElevenLabs_15_voice_samples
+          path: voice-preview/
+          if-no-files-found: error
+          retention-days: 7
