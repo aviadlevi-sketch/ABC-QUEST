@@ -80,6 +80,8 @@ jobs:
           cp android-patches/MainActivity.java app/src/main/java/com/abcquest/kids/MainActivity.java
           cp android-patches/mobile-fixes.css app/src/main/assets/mobile-fixes.css
           cp android-patches/offline-audio.js app/src/main/assets/offline-audio.js
+          cp android-patches/v72-game-fixes.js app/src/main/assets/v72-game-fixes.js
+          cp android-patches/v72-game-fixes.css app/src/main/assets/v72-game-fixes.css
           # Bundle human female voice recordings when provided in android-audio/.
           mkdir -p app/src/main/assets/audio
           if [ -d android-audio ]; then
@@ -105,15 +107,16 @@ jobs:
               encoding="utf-8")
           html_path = assets / "index.html"
           html = html_path.read_text(encoding="utf-8")
-          html = html.replace("</head>", '<link rel="stylesheet" href="mobile-fixes.css"></head>', 1)
+          html = html.replace("</head>", '<link rel="stylesheet" href="mobile-fixes.css"><link rel="stylesheet" href="v72-game-fixes.css"></head>', 1)
           html = html.replace("</body>",
               '<script src="audio/manifest.js"></script>'
-              '<script src="offline-audio.js"></script></body>', 1)
+              '<script src="offline-audio.js"></script>'
+              '<script src="v72-game-fixes.js"></script></body>', 1)
           html_path.write_text(html, encoding="utf-8")
           print("Prepared recordings:", {key: len(value) for key,value in manifest.items()})
           PY
-          sed -i 's/versionCode 7/versionCode 8/' app/build.gradle
-          sed -i "s/versionName '7.0'/versionName '7.1'/" app/build.gradle
+          sed -i 's/versionCode 7/versionCode 9/' app/build.gradle
+          sed -i "s/versionName '7.0'/versionName '7.2'/" app/build.gradle
 
       - name: Build installable Android APK
         run: gradle --no-daemon :app:assembleDebug
@@ -121,7 +124,7 @@ jobs:
       - name: Upload APK for Android
         uses: actions/upload-artifact@v4
         with:
-          name: ABC_QUEST_v7_1_APK
+          name: ABC_QUEST_v7_2_APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
