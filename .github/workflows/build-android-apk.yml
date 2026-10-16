@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'ABC_QUEST_Android_v73_*.zip'
+      - 'android-patches/upgrade_v74.py'
       - '.github/workflows/build-android-apk.yml'
   workflow_dispatch:
 
@@ -72,13 +73,27 @@ jobs:
           grep -q "versionName '7.3-preview'" app/build.gradle
           echo "Loaded complete version 7.3. No old patches applied."
 
+      - name: Python and image conversion dependency
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Upgrade offline app to v7.4 and verify images
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet Pillow
+          python android-patches/upgrade_v74.py
+          grep -q "versionName '7.4-preview'" app/build.gradle
+          test "$(find app/src/main/assets/images -name '*.jpg' | wc -l)" -eq 64
+
       - name: Build signed test APK
         run: gradle --no-daemon :app:assembleDebug
 
       - name: Publish Android test installer
         uses: actions/upload-artifact@v4
         with:
-          name: ABC_QUEST_v7_3_TEST_APK
+          name: ABC_QUEST_v7_4_TEST_APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
