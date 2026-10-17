@@ -49,3 +49,30 @@ padding:9px;border-radius:10px;background:rgba(26,37,100,.75);margin:9px 0}
  .quest76-home-actions .btn{width:100%;min-height:40px;padding:10px}
  .quest76-task-stats span{font-size:10px;padding:5px 7px}
 }
+
+/* Owned heroes and their purchased skins are available in every unlocked world. */
+.quest76-roster{border-radius:20px;border:2px solid rgba(255,218,121,.47);
+ background:linear-gradient(130deg,#173d83,#243676);padding:15px;margin:12px 0;color:#fff}
+.quest76-roster h2{margin:0 0 5px;font-size:20px;color:#fff}
+.quest76-roster h3{margin:12px 0 6px;color:#fff7c7;font-size:15px}
+.quest76-roster p{font-size:13px;color:#e2ebff;line-height:1.5;margin:0 0 12px}
+.quest76-owned-heroes{display:flex;gap:10px;overflow-x:auto;padding:5px 0 10px;
+ scroll-snap-type:x mandatory;overscroll-behavior-x:contain}
+.quest76-owned-hero{min-width:102px;width:102px;flex:0 0 102px;scroll-snap-align:start;
+ display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center;
+ padding:8px 5px;border-radius:13px;background:#2a4d94;color:white;
+ border:2px solid rgba(255,255,255,.24);font:inherit;cursor:pointer}
+.quest76-owned-hero.chosen{border-color:#ffda70;background:#3a548a;box-shadow:0 0 0 2px rgba(255,218,112,.22)}
+.quest76-owned-hero .quest76-owned-pic{object-fit:contain;width:72px;height:75px;border-radius:11px}
+.quest76-owned-hero span{font-weight:900;font-size:13px}.quest76-owned-hero small{font-size:10px;color:#fff1c2}
+.quest76-owned-skins{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.quest76-owned-skin{border:1px solid rgba(255,255,255,.34);background:#315497;
+ border-radius:11px;padding:8px;color:#fff;font:inherit;font-size:12px;
+ min-height:39px;display:flex;gap:5px;align-items:center;cursor:pointer}
+.quest76-owned-skin.chosen{border-color:#ffda70;background:#385078}
+.quest76-owned-skin .rarity{padding:3px 5px;font-size:10px}
+.quest76-roster-empty{padding:12px;background:#3a518e;border-radius:12px;
+ color:#ffe4a6;font-size:14px;margin:10px 0}
+.quest76-no-hero-tag{font-size:11px;color:#ffe4a6;font-weight:900}
+.quest76-no-hero .active-hero-visual{background:#173875}
+@media(max-width:390px){.quest76-roster{padding:10px}.quest76-owned-hero{min-width:91px;width:91px;flex-basis:91px}}
