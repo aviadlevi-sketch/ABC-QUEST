@@ -1,0 +1,8 @@
+/* ABC QUEST 7.6.4 — child's reading checked by microphone, no self-assessment. */
+.read764-scene .read764-helper{font-weight:850;line-height:1.65;min-height:54px;color:#e7edff;background:rgba(21,40,115,.8);padding:12px;border-radius:13px}
+.read764-controls{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+.read764-controls .btn{flex:1 1 180px;min-height:57px;font-size:16px}
+.read764-controls .btn[disabled]{opacity:.6;cursor:default}
+.read764-heard{display:block;color:#ffe3a1;line-height:1.55;margin:8px auto;font-size:14px}
+.read764-scene .reading-sequence{font-size:clamp(43px,11vw,68px);letter-spacing:.12em;line-height:1.3}
+@media(max-width:420px){.read764-controls{flex-direction:column}.read764-controls .btn{width:100%;flex:auto}}
