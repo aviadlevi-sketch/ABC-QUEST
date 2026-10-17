@@ -1,0 +1,62 @@
+name: ABC QUEST - Phonics precise shortening round 2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/refine-phonemes-round2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  refine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install offline MP3 processing
+        run: python -m pip install --disable-pip-version-check imageio-ffmpeg
+
+      - name: Retrieve already-created phoneme extraction ZIP (no API calls)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p source-phonemes
+          gh run download 39069415452 \
+            --repo "${{ github.repository }}" \
+            --name ABC_QUEST_26_EXTRACTED_SOUNDS_A_B \
+            --dir source-phonemes
+          test -s source-phonemes/words/fox.mp3
+          test -s source-phonemes/sounds/X_short.mp3
+          test -s source-phonemes/words/elephant.mp3
+
+      - name: Make shortened E I K L N S U V Y and word-final X
+        shell: bash
+        run: |
+          set -euo pipefail
+          python voice/refine_phonemes_user_feedback.py \
+            --input source-phonemes \
+            --output review-round2
+          test -s review-round2/LISTEN_REFINED_10_LETTERS.html
+          test "$(find review-round2/recommended -name '*.mp3' | wc -l)" -eq 26
+          test "$(find review-round2/adjusted -name '*.mp3' | wc -l)" -eq 20
+
+      - name: Upload Android-ready listening page and audio review files
+        uses: actions/upload-artifact@v4
+        with:
+          name: ABC_QUEST_PHONICS_SHORTER_CROPS_ROUND2
+          path: review-round2/
+          if-no-files-found: error
+          retention-days: 20
