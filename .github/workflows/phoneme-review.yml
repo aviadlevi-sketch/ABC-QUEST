@@ -1,0 +1,60 @@
+name: ABC QUEST - Review 26 phonemes with selected voice 2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phoneme-review.yml'
+      - 'voice/build_phoneme_review.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  make-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Reuse existing voice 2 recordings (no API credits)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p existing-comparison
+          gh run download 39065275869 --repo "${{ github.repository }}" \
+            --name ABC_QUEST_COMPARE_4_VOICES --dir existing-comparison
+          test -f existing-comparison/voice_2/names/A.mp3
+          test -f existing-comparison/voice_2/words/elephant.mp3
+          echo "Selected voice 2 recordings found"
+
+      - name: Build self-contained review of the 26 existing phonemes
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIP="$(find . -maxdepth 2 -type f -name 'ABC_QUEST_Android_v75_*.zip' -print -quit)"
+          test -n "$ZIP"
+          python voice/build_phoneme_review.py \
+            --archive "$ZIP" \
+            --voice2 existing-comparison/voice_2 \
+            --out phoneme-review
+          test -s phoneme-review/LISTEN_VOICE2_AND_26_SOUNDS.html
+          test "$(find phoneme-review/original_game_phonemes -name '*.mp3' | wc -l)" -eq 26
+
+      - name: Upload mobile listening page
+        uses: actions/upload-artifact@v4
+        with:
+          name: ABC_QUEST_VOICE2_AND_26_PHONEMES
+          path: phoneme-review/
+          if-no-files-found: error
+          retention-days: 20
