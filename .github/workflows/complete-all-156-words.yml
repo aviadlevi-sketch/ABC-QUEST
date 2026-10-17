@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/complete-all-156-words.yml'
+      - 'voice/complete_all_156_words.py'
   workflow_dispatch:
 
 permissions:
