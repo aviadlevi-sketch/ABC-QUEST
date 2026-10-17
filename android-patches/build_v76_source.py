@@ -249,14 +249,14 @@ def main():
     index_file.write_text(html_page,encoding="utf-8")
 
     gradle=gradle_file.read_text(encoding="utf-8")
-    gradle=replace_exact(gradle,"versionName '7.5-preview'","versionName '7.6.2-preview'",
+    gradle=replace_exact(gradle,"versionName '7.5-preview'","versionName '7.6.3-preview'",
                          "new versionName")
-    gradle=replace_exact(gradle,"versionCode 12","versionCode 15",
+    gradle=replace_exact(gradle,"versionCode 12","versionCode 16",
                          "increment Android versionCode for in-place update")
     gradle_file.write_text(gradle,encoding="utf-8")
     assert (assets/"offline-audio.js").is_file()
     assert "ABCQuestVersion76" in js_file.read_text(encoding="utf-8")
-    print("v7.6.2 prepared; 208 MP3; 156 word placements / 155 unique spoken words.")
+    print("v7.6.3 prepared; 208 MP3; 156 word placements / 155 unique spoken words.")
     print("Preserves previous progress; starter Alpha granted at zero cost.")
     print("Android project directory:",root)
     (out/"build_root.txt").write_text(str(root.resolve())+"\n",encoding="utf-8")

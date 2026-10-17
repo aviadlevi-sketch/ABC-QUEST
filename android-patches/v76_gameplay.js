@@ -14,12 +14,16 @@ for(let i=0;i<4;i++){
  }
  for(let j=1;j<4;j++)SKIN_CREDIT_PRICES[i][j]=baseSkinCredits[i][j]*5;
 }
-// Third and fourth worlds (0-based indices 2 and 3): epic (tier 2) and
-// legendary (tier 3) skins cost HALF their v7.6 credit price.
-// Other skin tiers, other worlds, and ALL trophy gates are unchanged.
-for(const world of [2,3]){
+// World 1+2: epic (tier 2) and legendary (tier 3) skins are 25% off
+// World 3+4: epic and legendary remain 50% off (approved earlier).
+// Discounts apply to ALREADY adjusted v7.6 base prices; only CREDIT prices.
+// Round to whole credits; common/rare skins and trophy gates are unaffected.
+const WORLD_SKIN_DISCOUNTS_763=[0.75,0.75,0.5,0.5];
+for(let world=0;world<4;world++){
  for(const tier of [2,3]){
-  SKIN_CREDIT_PRICES[world][tier]=Math.round(SKIN_CREDIT_PRICES[world][tier]/2);
+  SKIN_CREDIT_PRICES[world][tier]=Math.round(
+   SKIN_CREDIT_PRICES[world][tier]*WORLD_SKIN_DISCOUNTS_763[world]
+  );
  }
 }
 // The first hero is no longer given away. Average the previous hero and next
@@ -390,11 +394,11 @@ window.ABCQuestCrossWorldHeroes={
 };
 
 window.ABCQuestVersion76={
- version:'7.6.2',
+ version:'7.6.3',
  economy:()=>({heroes:HERO_CREDIT_PRICES.map(x=>x.slice()),trophies:HERO_TROPHY_GATES.map(x=>x.slice()),
   skins:SKIN_CREDIT_PRICES.map(x=>x.slice()),fameMax:GLORY[GLORY.length-1].min}),
  modeGoals:()=>MODE_TARGETS.map(x=>({key:x.key,needed:x.required})),
  modeStatus:world=>modeCounts76(world),
 };
-console.info('[ABC QUEST 7.6.2] Free Alpha, six exact hero credit prices and all-world purchases.');
+console.info('[ABC QUEST 7.6.3] Free Alpha, six fixed hero prices, 25% / 50% skin discounts.');
 })();
