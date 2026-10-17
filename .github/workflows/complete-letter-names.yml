@@ -1,0 +1,64 @@
+name: ABC QUEST - Complete 26 letter names and US Zebra
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/complete-letter-names.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  complete-letter-names:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout ABC QUEST
+        uses: actions/checkout@v4
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Retrieve six approved contextual letter names and Zebra
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p approved-audio
+          gh run download 39067118226 --repo "${{ github.repository }}" --name ABC_QUEST_LETTER_SOUND_ZEBRA_REPAIR_TEST --dir approved-audio
+          for letter in A B C M W Z; do
+            test -s "approved-audio/names/$letter/context_cropped.mp3"
+          done
+          test -s approved-audio/zebra/zee-bruh.mp3
+          echo "All seven approved assets available; no re-generation of accepted recordings"
+
+      - name: Prepare audio tools
+        run: python -m pip install --disable-pip-version-check imageio-ffmpeg
+
+      - name: Generate the remaining twenty names via approved contextual method
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$ELEVENLABS_API_KEY" ]; then
+            echo "::error::ElevenLabs API secret is not configured."
+            exit 1
+          fi
+          python voice/finish_letter_names.py --approved approved-audio --out final-names-preview
+          test "$(find final-names-preview/names -name '*.mp3' | wc -l)" -eq 26
+          test -s final-names-preview/LISTEN_26_LETTER_NAMES_AND_ZEBRA.html
+
+      - name: Publish 27 audio files and standalone listening page
+        uses: actions/upload-artifact@v4
+        with:
+          name: ABC_QUEST_26_LETTER_NAMES_ZEBRA_APPROVAL
+          path: final-names-preview/
+          if-no-files-found: error
+          retention-days: 30
