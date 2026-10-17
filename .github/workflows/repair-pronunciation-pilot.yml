@@ -1,0 +1,46 @@
+name: ABC QUEST - Repair letter pronunciation pilot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/repair-pronunciation-pilot.yml'
+      - 'voice/repair_pronunciation_pilot.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audio-pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify ffmpeg
+        run: ffmpeg -version | head -n 1
+      - name: Generate corrected name, sound, and zebra trials
+        shell: bash
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$ELEVENLABS_API_KEY" ]; then
+            echo "::error::ELEVENLABS_API_KEY secret is missing"
+            exit 1
+          fi
+          python voice/repair_pronunciation_pilot.py --out repaired-audio-test
+          test -s repaired-audio-test/LISTEN_FIXED_LETTERS_AND_ZEBRA.html
+      - name: Upload all trial files to review on Android
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ABC_QUEST_LETTER_SOUND_ZEBRA_REPAIR_TEST
+          path: repaired-audio-test/
+          if-no-files-found: warn
+          retention-days: 14
