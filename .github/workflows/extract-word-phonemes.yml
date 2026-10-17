@@ -1,0 +1,65 @@
+name: ABC QUEST - Extract phonemes from real word recordings
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/extract-word-phonemes.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - name: Checkout ABC QUEST
+        uses: actions/checkout@v4
+
+      - name: Configure Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install audio decoding tools
+        run: python -m pip install --disable-pip-version-check imageio-ffmpeg
+
+      - name: Retrieve existing approved words from voice 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p existing-voice-2 approved-zebra
+          gh run download 39065275869 --repo "${{ github.repository }}" --name ABC_QUEST_COMPARE_4_VOICES --dir existing-voice-2
+          gh run download 39067118226 --repo "${{ github.repository }}" --name ABC_QUEST_LETTER_SOUND_ZEBRA_REPAIR_TEST --dir approved-zebra
+          test -s existing-voice-2/voice_2/words/apple.mp3
+          test -s approved-zebra/zebra/zee-bruh.mp3
+
+      - name: Recover words and isolate 2 possible sounds per letter
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIP="$(find . -maxdepth 2 -type f -name 'ABC_QUEST_Android_v75_*.zip' -print -quit)"
+          test -n "$ZIP"
+          python voice/extract_phonemes_from_words.py \
+            --archive "$ZIP" \
+            --existing existing-voice-2 \
+            --approved approved-zebra \
+            --dest phonemes-from-words
+          test "$(find phonemes-from-words/sounds -name '*.mp3' | wc -l)" -eq 52
+          test -s phonemes-from-words/LISTEN_26_EXTRACTED_PHONEMES.html
+
+      - name: Publish review package — never automatically modify game
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ABC_QUEST_26_EXTRACTED_SOUNDS_A_B
+          path: phonemes-from-words/
+          if-no-files-found: warn
+          retention-days: 20
