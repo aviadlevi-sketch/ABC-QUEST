@@ -29,7 +29,7 @@ def main():
    if letter=="X":
     end=min(length,final+.020)
     start=end-seconds
-    assert start>length*.43, "X cut must be at end of fox"
+    assert start > initial + (final-initial)*.43, ("X crop reaches earlier sounds", start, initial, final)
    else:
     start=max(0,initial-.016)
     end=min(length,start+seconds)
