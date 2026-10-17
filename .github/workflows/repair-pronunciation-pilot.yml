@@ -29,7 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p repaired-audio-test
-          gh run download 39066998228 --repo "${{ github.repository }}" \\
+          gh run download 39066998228 --repo "${{ github.repository }}" \
             --name ABC_QUEST_LETTER_SOUND_ZEBRA_REPAIR_TEST --dir repaired-audio-test
           test -f repaired-audio-test/sounds/B/ipa.mp3
           test -f repaired-audio-test/zebra/cmu.mp3
