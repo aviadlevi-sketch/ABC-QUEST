@@ -227,36 +227,101 @@ def main():
     )
 
     gameplay_patch=(args.patches/"v76_gameplay.js").read_text(encoding="utf-8")
+    reading_patch=(args.patches/"reading-v764.js").read_text(encoding="utf-8")
     if "ABCQuestVersion76" not in gameplay_patch:
         raise RuntimeError("Gameplay upgrade patch missing")
+    if "ABCQuestVerifiedReading764" not in reading_patch:
+        raise RuntimeError("Verified microphone reading patch missing")
     last=adventure.rfind("})();")
     if last<0 or len(adventure[last:])>15:
         raise RuntimeError("Cannot locate adventure module closing IIFE")
     adventure=adventure[:last]+("\n/* v7.6 progression, home compass and economy */\n"+
-            gameplay_patch+"\nrender();\n")+adventure[last:]
+            gameplay_patch+"\n/* v7.6.4: microphone-verified reading */\n"+
+            reading_patch+"\nrender();\n")+adventure[last:]
     js_file.write_text(adventure,encoding="utf-8")
 
     # Replace the old Android-TTS fallback (all audios bundled) with direct
     # playback and true chained reading practice.
     shutil.copyfile(args.patches/"offline-audio-v76.js",assets/"offline-audio.js")
     shutil.copyfile(args.patches/"economy-v76.css",assets/"economy_v76.css")
+    shutil.copyfile(args.patches/"reading-v764.css",assets/"reading_v764.css")
     html_page=replace_exact(
         html_page,'<link rel="stylesheet" href="economy_v75.css">',
         '<link rel="stylesheet" href="economy_v75.css">'+
-        '<link rel="stylesheet" href="economy_v76.css">',
+        '<link rel="stylesheet" href="economy_v76.css">'+
+        '<link rel="stylesheet" href="reading_v764.css">',
         "new home quest and rarity badge stylesheet",
     )
     index_file.write_text(html_page,encoding="utf-8")
 
+    # Android recognizer already delegates microphone permissions to the OS.
+    # Return up to five speech hypotheses (not just the first) so that the
+    # child's correct letter names can be recognized despite ASR ambiguity.
+    # No microphone recording or transcript is persisted by our app.
+    activity_path=root/"app/src/main/java/com/abcquest/kids/MainActivity.java"
+    activity=activity_path.read_text(encoding="utf-8")
+    activity=replace_exact(activity,"import org.json.JSONObject;",
+        "import org.json.JSONObject;\nimport org.json.JSONArray;",
+        "Android Java SpeechRecognizer JSON array dependency")
+    activity=replace_exact(activity,"RecognizerIntent.EXTRA_MAX_RESULTS, 4",
+        "RecognizerIntent.EXTRA_MAX_RESULTS, 5",
+        "request multiple possible speech results")
+    activity=replace_exact(activity,
+        '"Say the English letter names"',
+        '"Read the English letters aloud in order"',
+        "speech prompt for a child")
+    activity=replace_exact(activity,"notifySpeech(\"\");",
+        "notifySpeechUnavailable();","report Android recognizer missing",n=2)
+    activity=replace_exact(activity,
+        '''    private void notifySpeech(String transcript) {
+        if (webView == null) return;
+        final String js = "window.abcNativeSpeechResult(" + JSONObject.quote(transcript) + ");";
+        webView.post(() -> webView.evaluateJavascript(js, null));
+    }''',
+        '''    private void notifySpeech(ArrayList<String> transcripts) {
+        if (webView == null) return;
+        JSONArray alternatives = new JSONArray();
+        if (transcripts != null) {
+            for (String text : transcripts) {
+                if (text != null && !text.trim().isEmpty()) alternatives.put(text);
+            }
+        }
+        final String js = "window.abcNativeSpeechResult(" + alternatives.toString() + ");";
+        webView.post(() -> webView.evaluateJavascript(js, null));
+    }
+    private void notifySpeechUnavailable() {
+        if (webView == null) return;
+        webView.post(() -> webView.evaluateJavascript(
+            "window.abcNativeSpeechError('unavailable');", null));
+    }''',
+        "send alternatives rather than first-only transcript")
+    activity=replace_exact(activity,
+        '''        String transcript = "";
+        if (resultCode == RESULT_OK && data != null) {
+            ArrayList<String> texts = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            if (texts != null && !texts.isEmpty()) transcript = texts.get(0);
+        }
+        notifySpeech(transcript);''',
+        '''        ArrayList<String> alternatives = new ArrayList<>();
+        if (resultCode == RESULT_OK && data != null) {
+            ArrayList<String> heard = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            if (heard != null) alternatives.addAll(heard);
+        }
+        notifySpeech(alternatives);''',
+        "return every OS transcription alternative or an empty canceled result")
+    activity_path.write_text(activity,encoding="utf-8")
+
     gradle=gradle_file.read_text(encoding="utf-8")
-    gradle=replace_exact(gradle,"versionName '7.5-preview'","versionName '7.6.3-preview'",
+    gradle=replace_exact(gradle,"versionName '7.5-preview'","versionName '7.6.4-preview'",
                          "new versionName")
-    gradle=replace_exact(gradle,"versionCode 12","versionCode 16",
+    gradle=replace_exact(gradle,"versionCode 12","versionCode 17",
                          "increment Android versionCode for in-place update")
     gradle_file.write_text(gradle,encoding="utf-8")
     assert (assets/"offline-audio.js").is_file()
     assert "ABCQuestVersion76" in js_file.read_text(encoding="utf-8")
-    print("v7.6.3 prepared; 208 MP3; 156 word placements / 155 unique spoken words.")
+    assert "ABCQuestVerifiedReading764" in js_file.read_text(encoding="utf-8")
+    assert "new JSONArray()" in activity_path.read_text(encoding="utf-8")
+    print("v7.6.4 prepared; 208 MP3; 156 word placements / 155 unique spoken words.")
     print("Preserves previous progress; starter Alpha granted at zero cost.")
     print("Android project directory:",root)
     (out/"build_root.txt").write_text(str(root.resolve())+"\n",encoding="utf-8")
