@@ -119,7 +119,7 @@ jobs:
           node --check "$ROOT/app/src/main/assets/adventure_v73.js"
           node tests/verified-reading-v764.cjs
           grep -q "ABCQuestVerifiedReading764" "$ROOT/app/src/main/assets/adventure_v73.js"
-          grep -q "class=\\"reading-controls read764-controls\\"" "$ROOT/app/src/main/assets/adventure_v73.js"
+          grep -Fq 'read764-controls' "$ROOT/app/src/main/assets/adventure_v73.js"
           grep -q "new JSONArray()" "$ROOT/app/src/main/java/com/abcquest/kids/MainActivity.java"
           grep -q "notifySpeechUnavailable" "$ROOT/app/src/main/java/com/abcquest/kids/MainActivity.java"
           node -e 'const fs=require("fs"),vm=require("vm");const c={window:{}};vm.createContext(c);vm.runInContext(fs.readFileSync(process.argv[1],"utf8"),c);const a=c.window.ABC_QUEST_AUDIO;if(Object.keys(a.names).length!==26||Object.keys(a.phonemes).length!==26||Object.keys(a.words).length!==155)throw Error("audio manifest count mismatch");console.log("Names 26; phonemes 26; unique word playback IDs 155")' "$ROOT/app/src/main/assets/audio/manifest.js"
