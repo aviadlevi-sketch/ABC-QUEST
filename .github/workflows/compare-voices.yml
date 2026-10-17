@@ -1,0 +1,54 @@
+name: ABC QUEST - Compare 4 ElevenLabs voices
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'voice/compare_request_20261017.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out game and scripts
+        uses: actions/checkout@v4
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Generate 15 identical clips for each selected voice
+        shell: bash
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$ELEVENLABS_API_KEY" ]; then
+            echo "::error::Missing ELEVENLABS_API_KEY GitHub Actions secret."
+            exit 1
+          fi
+          ZIP="$(find . -maxdepth 2 -type f -name 'ABC_QUEST_Android_v75_*.zip' -print -quit)"
+          if [ -z "$ZIP" ]; then
+            echo "::error::Missing ABC QUEST 7.5 Android source zip."
+            exit 1
+          fi
+          python voice/compare_voices.py \
+            --request voice/compare_request_20261017.json \
+            --archive "$ZIP" \
+            --out voice-comparison \
+            --model-id eleven_multilingual_v2
+
+      - name: Upload the four-voice comparison player and recordings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ABC_QUEST_COMPARE_4_VOICES
+          path: voice-comparison/
+          if-no-files-found: warn
+          retention-days: 20
