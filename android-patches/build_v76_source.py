@@ -131,9 +131,8 @@ def main():
         "words":all_records,
     },indent=2,ensure_ascii=False),encoding="utf-8")
 
-    # A newly-installed app starts without a purchased character. Alpha can be
-    # displayed as a borrowed starter avatar until the first paid unlock.
-    # Old players keep already owned Alpha and all previously earned heroes.
+    # A new player has no purchased hero; no loaned character is provided.
+    # Existing heroes and skins from previous worlds persist across upgrades.
     html_page=replace_exact(
         html_page,
         "if(!Array.isArray(progress.ownedHeroes))progress.ownedHeroes=['alpha'];",
@@ -143,8 +142,49 @@ def main():
     html_page=replace_exact(
         html_page,
         "if(!progress.ownedHeroes.includes('alpha'))progress.ownedHeroes.unshift('alpha');",
-        "/* v7.6: starter Alpha is a trial avatar, not a free owned character. */",
+        "/* v7.6: no automatic free or borrowed hero. */",
         "avoid regranting Alpha",
+    )
+
+    # Equipped heroes are a global collection, never bound to the current world.
+    # For zero-owned accounts, 'unassigned' is a neutral UI-only placeholder,
+    # not a playable borrowed hero or an item in the collection.
+    html_page=replace_exact(
+        html_page,
+        "if(!progress.equippedHero||!progress.ownedHeroes.includes(progress.equippedHero))progress.equippedHero='alpha';",
+        "if(!progress.equippedHero||!progress.ownedHeroes.includes(progress.equippedHero))progress.equippedHero=progress.ownedHeroes[0]||'unassigned';",
+        "equip a legitimately owned hero or no hero",
+    )
+    html_page=replace_exact(
+        html_page,
+        "function skinImage(id,tier=0){return HERO_IMAGES[id]?.[tier]||HERO_IMAGES.alpha[0];}",
+        "function skinImage(id,tier=0){return id==='unassigned'?'branding/no_hero_yet.svg':(HERO_IMAGES[id]?.[tier]||HERO_IMAGES.alpha[0]);}",
+        "neutral unowned avatar placeholder",
+    )
+    html_page=replace_exact(
+        html_page,
+        "function equippedHero(){return getHero(progress.equippedHero);}",
+        "function equippedHero(){return ownsHero(progress.equippedHero)?getHero(progress.equippedHero):{id:'unassigned',name:'עוד אין דמות',subtitle:'שחקו כדי לצבור קרדיטים ולקנות דמות ראשונה'};}",
+        "never display unowned Alpha as selected hero",
+    )
+    html_page=replace_exact(
+        html_page,
+        "function equippedTier(id){return progress.equippedSkins[id]||0;}",
+        "function equippedTier(id){return id==='unassigned'?0:(progress.equippedSkins[id]||0);}",
+        "no skin granted to unowned avatar",
+    )
+    (assets/"branding").mkdir(exist_ok=True)
+    (assets/"branding/no_hero_yet.svg").write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">'
+        '<defs><linearGradient id="g"><stop stop-color="#2145a8"/>'
+        '<stop offset="1" stop-color="#116f92"/></linearGradient></defs>'
+        '<rect x="8" y="8" width="184" height="184" rx="44" fill="url(#g)"/>'
+        '<circle cx="100" cy="68" r="26" fill="#d2ddff" opacity=".76"/>'
+        '<path d="M39 159c2-29 25-51 61-51s59 22 61 51v10H39z" fill="#d2ddff" opacity=".76"/>'
+        '<circle cx="164" cy="42" r="17" fill="#ffd96d"/>'
+        '<text x="164" y="49" font-size="21" text-anchor="middle" font-weight="bold" fill="#15234f">?</text>'
+        '</svg>',
+        encoding="utf-8",
     )
 
     # Disable the v7.5 automatic world-first hero gifting (including on
