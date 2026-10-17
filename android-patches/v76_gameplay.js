@@ -14,6 +14,14 @@ for(let i=0;i<4;i++){
  }
  for(let j=1;j<4;j++)SKIN_CREDIT_PRICES[i][j]=baseSkinCredits[i][j]*5;
 }
+// Third and fourth worlds (0-based indices 2 and 3): epic (tier 2) and
+// legendary (tier 3) skins cost HALF their v7.6 credit price.
+// Other skin tiers, other worlds, and ALL trophy gates are unchanged.
+for(const world of [2,3]){
+ for(const tier of [2,3]){
+  SKIN_CREDIT_PRICES[world][tier]=Math.round(SKIN_CREDIT_PRICES[world][tier]/2);
+ }
+}
 // The first hero is no longer given away. Average the previous hero and next
 // hero; the first ever hero has no predecessor, so use half the next hero.
 for(let i=0;i<4;i++){
