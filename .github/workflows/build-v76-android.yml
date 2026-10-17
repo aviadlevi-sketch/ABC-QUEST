@@ -1,4 +1,4 @@
-name: Build ABC QUEST 7.6 with offline audio and guided progression
+name: Build ABC QUEST 7.6.1 - owned heroes in every world
 
 on:
   push:
@@ -115,8 +115,8 @@ jobs:
           node --check "$ROOT/app/src/main/assets/offline-audio.js"
           node --check "$ROOT/app/src/main/assets/adventure_v73.js"
           node -e 'const fs=require("fs"),vm=require("vm");const c={window:{}};vm.createContext(c);vm.runInContext(fs.readFileSync(process.argv[1],"utf8"),c);const a=c.window.ABC_QUEST_AUDIO;if(Object.keys(a.names).length!==26||Object.keys(a.phonemes).length!==26||Object.keys(a.words).length!==155)throw Error("audio manifest count mismatch");console.log("Names 26; phonemes 26; unique word playback IDs 155")' "$ROOT/app/src/main/assets/audio/manifest.js"
-          grep -q "versionName '7.6-preview'" "$ROOT/app/build.gradle"
-          grep -q "versionCode 13" "$ROOT/app/build.gradle"
+          grep -q "versionName '7.6.1-preview'" "$ROOT/app/build.gradle"
+          grep -q "versionCode 14" "$ROOT/app/build.gradle"
           grep -q "economyVersion!==75 && progress.economyVersion!==76" "$ROOT/app/src/main/assets/adventure_v73.js"
 
       - name: Build signed Android 7.6 debug APK for on-device validation
@@ -130,7 +130,7 @@ jobs:
       - name: Publish installable 7.6 APK
         uses: actions/upload-artifact@v4
         with:
-          name: ABC_QUEST_v7_6_OFFLINE_VOICE_TEST_APK
+          name: ABC_QUEST_v7_6_1_GLOBAL_HEROES_APK
           path: ${{ env.ABCQUEST_ANDROID_DIR }}/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
@@ -140,13 +140,13 @@ jobs:
         run: |
           set -euo pipefail
           cd "$(dirname "$ABCQUEST_ANDROID_DIR")"
-          zip -qr "$GITHUB_WORKSPACE/ABC_QUEST_Android_v76_FULL_SOURCE.zip" "$(basename "$ABCQUEST_ANDROID_DIR")"
-          test -s "$GITHUB_WORKSPACE/ABC_QUEST_Android_v76_FULL_SOURCE.zip"
+          zip -qr "$GITHUB_WORKSPACE/ABC_QUEST_Android_v761_FULL_SOURCE.zip" "$(basename "$ABCQUEST_ANDROID_DIR")"
+          test -s "$GITHUB_WORKSPACE/ABC_QUEST_Android_v761_FULL_SOURCE.zip"
 
       - name: Publish editable Android source ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ABC_QUEST_v7_6_FULL_SOURCE
-          path: ABC_QUEST_Android_v76_FULL_SOURCE.zip
+          name: ABC_QUEST_v7_6_1_FULL_SOURCE
+          path: ABC_QUEST_Android_v761_FULL_SOURCE.zip
           if-no-files-found: error
           retention-days: 30
