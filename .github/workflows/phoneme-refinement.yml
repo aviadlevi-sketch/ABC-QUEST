@@ -1,0 +1,61 @@
+name: ABC QUEST - Review refined phonics cuts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phoneme-refinement.yml'
+      - 'voice/sound_crop_review_v2.py'
+      - 'voice/refine_phonemes_params.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  refine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout ABC QUEST
+        uses: actions/checkout@v4
+
+      - name: Configure Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install audio processing support
+        run: python -m pip install --disable-pip-version-check imageio-ffmpeg
+
+      - name: Download 26 previously recorded word sources and short cuts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p previous-sounds
+          gh run download 39069415452 --repo "${{ github.repository }}" \
+            --name ABC_QUEST_26_EXTRACTED_SOUNDS_A_B --dir previous-sounds
+          test "$(find previous-sounds/words -name '*.mp3' | wc -l)" -eq 26
+          test "$(find previous-sounds/sounds -name '*_short.mp3' | wc -l)" -eq 26
+
+      - name: Refine only flagged sounds with two alternative cuts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python voice/sound_crop_review_v2.py \
+            --previous previous-sounds \
+            --params voice/refine_phonemes_params.json \
+            --out refined-sounds
+          test "$(find refined-sounds/alternatives -name '*.mp3' | wc -l)" -eq 20
+          test -s refined-sounds/LISTEN_REFINED_SOUNDS.html
+
+      - name: Publish self-contained listening test
+        uses: actions/upload-artifact@v4
+        with:
+          name: ABC_QUEST_REFINED_10_LETTER_SOUNDS
+          path: refined-sounds/
+          if-no-files-found: error
+          retention-days: 20
