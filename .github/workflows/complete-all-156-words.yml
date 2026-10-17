@@ -1,0 +1,84 @@
+name: ABC QUEST - Complete all 156 words (ElevenLabs voice 2)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/complete-all-156-words.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  words:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout ABC QUEST scripts and game ZIP
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Reuse existing 26 game word recordings (avoid spending credits again)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p existing-words
+          gh run download 39069415452 \
+            --repo "${{ github.repository }}" \
+            --name ABC_QUEST_26_EXTRACTED_SOUNDS_A_B \
+            --dir existing-words
+          test -s existing-words/words/apple.mp3
+          test -s existing-words/words/fox.mp3
+
+      - name: Reuse separately user-approved US Zebra (ZEE-bruh)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p approved-zebra
+          gh run download 39067118226 \
+            --repo "${{ github.repository }}" \
+            --name ABC_QUEST_LETTER_SOUND_ZEBRA_REPAIR_TEST \
+            --dir approved-zebra
+          test -s approved-zebra/zebra/zee-bruh.mp3
+
+      - name: Generate missing words and validate all 156 MP3s
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$ELEVENLABS_API_KEY" ]; then
+            echo "::error::Secret ELEVENLABS_API_KEY not present."
+            exit 1
+          fi
+          ZIP="$(find . -maxdepth 2 -type f -name 'ABC_QUEST_Android_v75_*.zip' -print -quit)"
+          if [ -z "$ZIP" ]; then
+            echo "::error::Source game ZIP not found."
+            exit 1
+          fi
+          python -u voice/complete_all_156_words.py \
+            --archive "$ZIP" \
+            --existing existing-words \
+            --approved-zebra approved-zebra \
+            --out complete-word-audio
+          test "$(find complete-word-audio/words -name '*.mp3' | wc -l)" -eq 156
+          test -s complete-word-audio/LISTEN_ALL_156_WORDS_ON_PHONE.html
+
+      - name: Preserve MP3 recordings, complete manifest and mobile player
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ABC_QUEST_COMPLETE_156_WORDS_VOICE2
+          path: complete-word-audio/
+          if-no-files-found: warn
+          retention-days: 30
