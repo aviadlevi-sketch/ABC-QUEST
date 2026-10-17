@@ -1,0 +1,35 @@
+name: ABC QUEST - Inspect v7.5 gameplay internals
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/inspect-v75.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect economy and screens
+        shell: bash
+        run: |
+          python - <<'PY'
+          import zipfile,re,json,pathlib,glob
+          src=glob.glob('ABC_QUEST_Android_v75_*.zip')[0]
+          with zipfile.ZipFile(src) as z:
+              p=[s for s in z.namelist() if s.endswith('app/src/main/assets/index.html')][0]
+              q=[s for s in z.namelist() if s.endswith('app/src/main/assets/adventure_v73.js')][0]
+              h=z.read(p).decode('utf-8'); j=z.read(q).decode('utf-8')
+          print('### SIZES',len(h),len(j),flush=True)
+          keys=['HERO_CREDIT_PRICES','HERO_TROPHY_GATES','SKIN_CREDIT_PRICES','FAME_TROPHIES','GLORY','questVersion','questClaimedHeroes','function heroTrophyGate','function skinTrophyGate','function worldStats','function heroCheckpoint','function heroCreditPrice','function skinCreditPrice','function skinRequirements','function worldOpen','function maybeAutoOpenWorldHero','function beginGame','function finishGame','function readQuestion','function homePage','function stagePage','function gamePage','const WON']
+          for source,label in ((j,'adventure'),(h,'html')):
+              for pattern in keys:
+                  positions=[m.start() for m in re.finditer(re.escape(pattern),source)]
+                  if not positions:continue
+                  print('###',label,pattern,'count',len(positions))
+                  for pos in positions[:2]:print(source[max(0,pos-220):pos+650].replace('\n',' ')[:900])
+          for key in ['heroTrophyGate(id)+[0,600,1500,3200][tier]','const QUEST_VERSION=6;',"if(progress.economyVersion!==75){","qualified=correct>=Math.ceil(length*.75) && mode!=='read';","const won=!game.diagnostic&&pct>=75&&game.mode!=='read'",'function maybeAutoOpenWorldHero(){','<link rel="stylesheet" href="economy_v75.css">','if(!Array.isArray(progress.ownedHeroes))progress.ownedHeroes=[\'alpha\'];']:
+              print('### EXPECT',key,'html',h.count(key),'adventure',j.count(key))
+          PY
