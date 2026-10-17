@@ -22,6 +22,23 @@ for(let i=0;i<4;i++){
  HERO_CREDIT_PRICES[i][0]=Math.round((previousC+HERO_CREDIT_PRICES[i][1])/2);
  HERO_TROPHY_GATES[i][0]=Math.round((previousT+HERO_TROPHY_GATES[i][1])/2);
 }
+// v7.6.2 price corrections are in CREDITS (trophy gates remain unchanged).
+// Apply AFTER the original 10x scaling and first-world-hero averages so that
+// all six user-specified amounts stay EXACT and unrelated heroes keep their prices.
+const EXACT_HERO_PRICES_762={luna:2200,rex:2600,nova:2800,mix:3300,kitty:3400,orion:4200};
+for(const [id,amount] of Object.entries(EXACT_HERO_PRICES_762)){
+ const world=worldByHero(id),slot=slotByHero(id);
+ if(!WORLD_HEROES[world]||WORLD_HEROES[world][slot]!==id)throw Error('Unknown hero ID: '+id);
+ HERO_CREDIT_PRICES[world][slot]=amount;
+}
+// Alpha is FREE for every new player; there is no credit or trophy purchase gate.
+HERO_CREDIT_PRICES[0][0]=0;
+HERO_TROPHY_GATES[0][0]=0;
+// Keep legacy/base-store prices synchronized with the quest store and UI.
+for(const h of HEROES){
+ h.price=heroCreditPrice(h.id);
+ h.minTrophies=heroTrophyGate(h.id);
+}
 FAME_TROPHIES.forEach((val,i)=>{FAME_TROPHIES[i]=val*3;GLORY[i].min=FAME_TROPHIES[i];});
 progress.questVersion=ECONOMY_76;
 progress.economyVersion=ECONOMY_76;
@@ -225,7 +242,9 @@ const originalCheckpoint76=checkpointCard;
 checkpointCard=function(i,id,slot){
  let out=originalCheckpoint76(i,id,slot);
  if(slot===0){
-  out=out.replace('פתיחה בכניסה לעולם','דמות ראשונה · אינה בחינם');
+  out=out.replace('פתיחה בכניסה לעולם',
+    i===0?'אלפא · מתנה חינמית לכל שחקן':'דמות ראשונה בעולם · דורשת רכישה');
+  if(i===0)out=out.replace('דמות ראשונה · אינה בחינם','אלפא · דמות חינמית');
  }
  const cp=heroCheckpoint(i,slot),gap=Math.max(0,heroCreditPrice(id)-progress.credits);
  if(cp.ready&&!ownsHero(id)&&gap){
@@ -363,11 +382,11 @@ window.ABCQuestCrossWorldHeroes={
 };
 
 window.ABCQuestVersion76={
- version:'7.6',
+ version:'7.6.2',
  economy:()=>({heroes:HERO_CREDIT_PRICES.map(x=>x.slice()),trophies:HERO_TROPHY_GATES.map(x=>x.slice()),
   skins:SKIN_CREDIT_PRICES.map(x=>x.slice()),fameMax:GLORY[GLORY.length-1].min}),
  modeGoals:()=>MODE_TARGETS.map(x=>({key:x.key,needed:x.required})),
  modeStatus:world=>modeCounts76(world),
 };
-console.info('[ABC QUEST 7.6] Updated reward costs, guided missions, and per-mode gates.');
+console.info('[ABC QUEST 7.6.2] Free Alpha, six exact hero credit prices and all-world purchases.');
 })();
