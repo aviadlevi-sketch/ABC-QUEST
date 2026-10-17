@@ -1,4 +1,4 @@
-name: Build ABC QUEST 7.6.3 - skin discounts all four worlds
+name: Build ABC QUEST 7.6.4 - speech-verified reading
 
 on:
   push:
@@ -9,6 +9,9 @@ on:
       - 'android-patches/offline-audio-v76.js'
       - 'android-patches/economy-v76.css'
       - 'android-patches/build_v76_source.py'
+      - 'android-patches/reading-v764.js'
+      - 'android-patches/reading-v764.css'
+      - 'tests/verified-reading-v764.cjs'
   workflow_dispatch:
 
 permissions:
@@ -89,7 +92,7 @@ jobs:
             --dir audio-input/words
           test "$(find audio-input/words/words -name '*.mp3' | wc -l)" -eq 156
 
-      - name: Package 7.6.3 Android project and all local speech
+      - name: Package 7.6.4 Android project and all local speech
         shell: bash
         run: |
           set -euo pipefail
@@ -114,9 +117,14 @@ jobs:
           ROOT="$ABCQUEST_ANDROID_DIR"
           node --check "$ROOT/app/src/main/assets/offline-audio.js"
           node --check "$ROOT/app/src/main/assets/adventure_v73.js"
+          node tests/verified-reading-v764.cjs
+          grep -q "ABCQuestVerifiedReading764" "$ROOT/app/src/main/assets/adventure_v73.js"
+          grep -q "class=\\"reading-controls read764-controls\\"" "$ROOT/app/src/main/assets/adventure_v73.js"
+          grep -q "new JSONArray()" "$ROOT/app/src/main/java/com/abcquest/kids/MainActivity.java"
+          grep -q "notifySpeechUnavailable" "$ROOT/app/src/main/java/com/abcquest/kids/MainActivity.java"
           node -e 'const fs=require("fs"),vm=require("vm");const c={window:{}};vm.createContext(c);vm.runInContext(fs.readFileSync(process.argv[1],"utf8"),c);const a=c.window.ABC_QUEST_AUDIO;if(Object.keys(a.names).length!==26||Object.keys(a.phonemes).length!==26||Object.keys(a.words).length!==155)throw Error("audio manifest count mismatch");console.log("Names 26; phonemes 26; unique word playback IDs 155")' "$ROOT/app/src/main/assets/audio/manifest.js"
-          grep -q "versionName '7.6.3-preview'" "$ROOT/app/build.gradle"
-          grep -q "versionCode 16" "$ROOT/app/build.gradle"
+          grep -q "versionName '7.6.4-preview'" "$ROOT/app/build.gradle"
+          grep -q "versionCode 17" "$ROOT/app/build.gradle"
           grep -q "economyVersion!==75 && progress.economyVersion!==76" "$ROOT/app/src/main/assets/adventure_v73.js"
           grep -q "EXACT_HERO_PRICES_762" "$ROOT/app/src/main/assets/adventure_v73.js"
           grep -q "WORLD_SKIN_DISCOUNTS_763" "$ROOT/app/src/main/assets/adventure_v73.js"
@@ -149,7 +157,7 @@ jobs:
           NODE
           grep -q "progress.questClaimedHeroes.alpha=true" "$ROOT/app/src/main/assets/index.html"
 
-      - name: Build signed Android 7.6.3 debug APK for on-device validation
+      - name: Build signed Android 7.6.4 debug APK for on-device validation
         shell: bash
         run: |
           set -euo pipefail
@@ -157,10 +165,10 @@ jobs:
           gradle --no-daemon :app:assembleDebug
           test -s app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Publish installable 7.6.3 APK
+      - name: Publish installable 7.6.4 APK
         uses: actions/upload-artifact@v4
         with:
-          name: ABC_QUEST_v7_6_3_SKIN_DISCOUNTS_APK
+          name: ABC_QUEST_v7_6_4_VERIFIED_READING_APK
           path: ${{ env.ABCQUEST_ANDROID_DIR }}/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
@@ -170,13 +178,13 @@ jobs:
         run: |
           set -euo pipefail
           cd "$(dirname "$ABCQUEST_ANDROID_DIR")"
-          zip -qr "$GITHUB_WORKSPACE/ABC_QUEST_Android_v763_FULL_SOURCE.zip" "$(basename "$ABCQUEST_ANDROID_DIR")"
-          test -s "$GITHUB_WORKSPACE/ABC_QUEST_Android_v763_FULL_SOURCE.zip"
+          zip -qr "$GITHUB_WORKSPACE/ABC_QUEST_Android_v764_FULL_SOURCE.zip" "$(basename "$ABCQUEST_ANDROID_DIR")"
+          test -s "$GITHUB_WORKSPACE/ABC_QUEST_Android_v764_FULL_SOURCE.zip"
 
       - name: Publish editable Android source ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ABC_QUEST_v7_6_3_FULL_SOURCE
-          path: ABC_QUEST_Android_v763_FULL_SOURCE.zip
+          name: ABC_QUEST_v7_6_4_FULL_SOURCE
+          path: ABC_QUEST_Android_v764_FULL_SOURCE.zip
           if-no-files-found: error
           retention-days: 30
