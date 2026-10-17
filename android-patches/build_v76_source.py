@@ -131,29 +131,31 @@ def main():
         "words":all_records,
     },indent=2,ensure_ascii=False),encoding="utf-8")
 
-    # A new player has no purchased hero; no loaned character is provided.
-    # Existing heroes and skins from previous worlds persist across upgrades.
+    # Every player starts with Alpha for free. Existing heroes, purchased skins,
+    # earned credits and trophies remain intact across in-place upgrades.
+    # No other character is gifted or loaned.
     html_page=replace_exact(
         html_page,
         "if(!Array.isArray(progress.ownedHeroes))progress.ownedHeroes=['alpha'];",
-        "if(!Array.isArray(progress.ownedHeroes))progress.ownedHeroes=[];",
-        "don't give Alpha ownership to fresh installs",
+        "if(!Array.isArray(progress.ownedHeroes))progress.ownedHeroes=['alpha'];",
+        "free starter Alpha for new users",
     )
     html_page=replace_exact(
         html_page,
         "if(!progress.ownedHeroes.includes('alpha'))progress.ownedHeroes.unshift('alpha');",
-        "/* v7.6: no automatic free or borrowed hero. */",
-        "avoid regranting Alpha",
+        "if(!progress.ownedHeroes.includes('alpha'))progress.ownedHeroes.unshift('alpha');"
+        "if(!progress.questClaimedHeroes || typeof progress.questClaimedHeroes!=='object')progress.questClaimedHeroes={};"
+        "progress.questClaimedHeroes.alpha=true;",
+        "mark starter Alpha owned and claimed without cost",
     )
 
     # Equipped heroes are a global collection, never bound to the current world.
-    # For zero-owned accounts, 'unassigned' is a neutral UI-only placeholder,
-    # not a playable borrowed hero or an item in the collection.
+    # Keep previously selected owned characters, or select starter Alpha.
     html_page=replace_exact(
         html_page,
         "if(!progress.equippedHero||!progress.ownedHeroes.includes(progress.equippedHero))progress.equippedHero='alpha';",
-        "if(!progress.equippedHero||!progress.ownedHeroes.includes(progress.equippedHero))progress.equippedHero=progress.ownedHeroes[0]||'unassigned';",
-        "equip a legitimately owned hero or no hero",
+        "if(!progress.equippedHero||!progress.ownedHeroes.includes(progress.equippedHero))progress.equippedHero=progress.ownedHeroes[0]||'alpha';",
+        "equip a legitimately owned hero, defaulting to free Alpha",
     )
     html_page=replace_exact(
         html_page,
@@ -247,15 +249,15 @@ def main():
     index_file.write_text(html_page,encoding="utf-8")
 
     gradle=gradle_file.read_text(encoding="utf-8")
-    gradle=replace_exact(gradle,"versionName '7.5-preview'","versionName '7.6.1-preview'",
+    gradle=replace_exact(gradle,"versionName '7.5-preview'","versionName '7.6.2-preview'",
                          "new versionName")
-    gradle=replace_exact(gradle,"versionCode 12","versionCode 14",
+    gradle=replace_exact(gradle,"versionCode 12","versionCode 15",
                          "increment Android versionCode for in-place update")
     gradle_file.write_text(gradle,encoding="utf-8")
     assert (assets/"offline-audio.js").is_file()
     assert "ABCQuestVersion76" in js_file.read_text(encoding="utf-8")
-    print("v7.6.1 prepared; 208 MP3; 156 word placements / 155 unique spoken words.")
-    print("Preserves previous progress and removes new-account free hero grant.")
+    print("v7.6.2 prepared; 208 MP3; 156 word placements / 155 unique spoken words.")
+    print("Preserves previous progress; starter Alpha granted at zero cost.")
     print("Android project directory:",root)
     (out/"build_root.txt").write_text(str(root.resolve())+"\n",encoding="utf-8")
 
