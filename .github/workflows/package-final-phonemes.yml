@@ -1,0 +1,62 @@
+name: ABC QUEST - Final approved 26 phonemes (original X)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/package-final-phonemes.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout ABC QUEST
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Retrieve previously reviewed short and gentle A clips
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p reviewed-round2
+          gh run download 39071909920 --repo "${{ github.repository }}" \
+            --name ABC_QUEST_PHONICS_SHORTER_CROPS_ROUND2 \
+            --dir reviewed-round2
+          test -s reviewed-round2/adjusted/E_A.mp3
+          test -s reviewed-round2/previous_short/B.mp3
+
+      - name: Assemble approved phonemes and original Android X
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIP="$(find . -maxdepth 2 -type f -name 'ABC_QUEST_Android_v75_*.zip' -print -quit)"
+          if [ -z "$ZIP" ]; then
+            echo "::error::Android source ZIP not found"
+            exit 1
+          fi
+          python voice/package_final_26_sounds.py \
+            --original-zip "$ZIP" \
+            --round2 reviewed-round2 \
+            --out approved-phonemes
+          test "$(find approved-phonemes/phonemes -name '*.mp3' | wc -l)" -eq 26
+          test -s approved-phonemes/LISTEN_FINAL_26_PHONEMES.html
+
+      - name: Publish complete approved 26-sound pack
+        uses: actions/upload-artifact@v4
+        with:
+          name: ABC_QUEST_FINAL_26_PHONEMES_ORIGINAL_X
+          path: approved-phonemes/
+          if-no-files-found: error
+          retention-days: 30
