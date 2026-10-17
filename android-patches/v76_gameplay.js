@@ -156,8 +156,10 @@ const originalHome76=homePage;
 homePage=function(){
  let out=originalHome76();
  const h=equippedHero(),tier=equippedTier(h.id);
- const status=ownsHero(h.id)?'דמות בבעלותי':'דמות בהשאלה · עדיין לא נרכשה';
- const badge='<span class="quest76-hero-badge">'+rarityLabel(tier)+
+ const selectedIsOwned=ownsHero(h.id);
+ const status=selectedIsOwned?'הדמות שלי · אפשר לשחק איתה בכל עולם':'טרם נרכשה דמות';
+ const badge='<span class="quest76-hero-badge">'+
+  (selectedIsOwned?rarityLabel(tier):'<span class="quest76-no-hero-tag">🎯 משחקים כדי להשיג דמות</span>')+
   '<small>'+status+'</small></span>';
  out=out.replace('<span class="home-character-name">'+h.name+' ⭐</span>',
   '<span class="home-character-name">'+h.name+'</span>'+badge);
@@ -273,6 +275,93 @@ app.addEventListener('click',function(e){
   shopHeroId=target.dataset.hero;shopTab='skins';page='shop';render();
  }
 },true);
+
+// All purchased heroes and their purchased skins are available in EVERY world.
+// World origin governs how rewards are earned, never which avatar can be equipped.
+function crossWorldCharacterChooser76(){
+ const owned=HEROES.filter(h=>ownsHero(h.id));
+ if(!owned.length){
+  return '<section class="quest76-roster">'+
+   '<h2>🎭 הדמות שלי</h2>'+
+   '<div class="quest76-roster-empty">עוד אין לך דמות. אפשר לשחק ולצבור קרדיטים וגביעים עד לרכישת הדמות הראשונה. אין דמויות בהשאלה.</div>'+
+   '<button class="btn teal" data-action="navigate" data-page="heroes">לראות את הדמויות שאפשר להשיג</button></section>';
+ }
+ // Repairs an old save if its selected hero was sold/removed, without
+ // granting ownership. Usually already normalized on app startup.
+ if(!ownsHero(progress.equippedHero)){
+  progress.equippedHero=owned[0].id;
+  save();
+ }
+ const current=equippedHero();
+ let roster='<div class="quest76-owned-heroes">';
+ for(const h of owned){
+  const selected=current.id===h.id;
+  roster+='<button class="quest76-owned-hero'+(selected?' chosen':'')+
+    '" data-action="equip-hero" data-hero="'+h.id+'" aria-label="בחר את '+h.name+
+    ' לשחק בעולם הזה">'+artHtml(h.id,equippedTier(h.id),'quest76-owned-pic')+
+    '<span>'+h.name+'</span><small>'+(selected?'✓ הדמות הפעילה':'בחר דמות')+'</small></button>';
+ }
+ roster+='</div>';
+ const tiers=(progress.ownedSkins[current.id]||[0]).filter((x,i,a)=>Number.isInteger(Number(x))&&
+   Number(x)>=0&&Number(x)<=3&&a.indexOf(x)===i).map(Number).sort();
+ let skins='<div class="quest76-owned-skins">';
+ for(const tier of tiers){
+  skins+='<button class="quest76-owned-skin'+(equippedTier(current.id)===tier?' chosen':'')+
+    '" data-action="equip-skin" data-hero="'+current.id+'" data-tier="'+tier+
+    '" '+(equippedTier(current.id)===tier?'disabled':'')+'>'+
+    rarityLabel(tier)+' '+(HERO_SKIN_NAMES[current.id]?.[tier]||'סקין')+
+    (equippedTier(current.id)===tier?' ✓':'')+'</button>';
+ }
+ skins+='</div>';
+ return '<section class="quest76-roster"><h2>🎭 הדמות שאיתה משחקים</h2>'+
+   '<p>אפשר לבחור כאן כל דמות שכבר קנית, מכל עולם קודם, ולהחליף לסקינים שרכשת. הדמות שנבחרה תלווה אותך בכל משחק.</p>'+
+   roster+'<h3>✨ הסקינים שכבר רכשתי עבור '+current.name+'</h3>'+skins+'</section>';
+}
+const earlierStageGlobal76=stagePage;
+stagePage=function(){
+ const output=earlierStageGlobal76();
+ // This is a player-wide locker, not tied to selectedStage or WORLD_HEROES.
+ if(!worldOpen(selectedStage))return output;
+ return crossWorldCharacterChooser76()+output;
+};
+const earlierCollectiblePanelGlobal76=collectiblePanel;
+collectiblePanel=function(){
+ if(ownsHero(progress.equippedHero))return earlierCollectiblePanelGlobal76();
+ return '<div class="active-hero-panel quest76-no-hero">'+
+  '<div class="active-hero-visual">'+artHtml('unassigned',0,'active-hero-img')+'</div>'+
+  '<div class="active-hero-copy"><span class="game-kicker">🎯 עוד אין דמות בבעלותי</span>'+
+  '<h2>ממשיכים לצבור קרדיטים</h2>'+
+  '<p>אחרי שתרכוש דמות, היא וכל הסקינים שקנית לה יוכלו לשחק בכל העולמות. אין דמויות בהשאלה.</p>'+
+  '<button class="btn teal" data-action="navigate" data-page="heroes">🎭 לדמויות שאפשר לרכוש</button>'+
+  '</div></div>';
+};
+// The sidebar must not display the 'common/basic skin' badge for a nonexistent
+// hero. Replace it with a neutral progress hint, never a loaned character.
+const originalGlobalRender76=render;
+render=function(){
+ originalGlobalRender76();
+ if(!ownsHero(progress.equippedHero)){
+  const sidebar=app.querySelector('.sidebar-hero');
+  if(sidebar){
+   const fakeRarity=sidebar.querySelector('.rarity');
+   if(fakeRarity){
+    const hint=document.createElement('small');
+    hint.className='quest76-no-hero-tag';
+    hint.textContent='עוד אין דמות בבעלותי';
+    fakeRarity.replaceWith(hint);
+   }
+  }
+ }
+};
+window.ABCQuestCrossWorldHeroes={
+ isAvailableInWorld:function(heroId,worldIndex){
+  return Number.isInteger(worldIndex)&&worldIndex>=0&&worldIndex<4&&ownsHero(heroId);
+ },
+ purchasedHeroes:()=>HEROES.filter(h=>ownsHero(h.id)).map(h=>h.id),
+ purchasedSkins:id=>ownsHero(id)?[...(progress.ownedSkins[id]||[0])]:[],
+ equipped:()=>ownsHero(progress.equippedHero)?progress.equippedHero:null,
+};
+
 window.ABCQuestVersion76={
  version:'7.6',
  economy:()=>({heroes:HERO_CREDIT_PRICES.map(x=>x.slice()),trophies:HERO_TROPHY_GATES.map(x=>x.slice()),
