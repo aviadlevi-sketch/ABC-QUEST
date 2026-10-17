@@ -14,6 +14,7 @@ import json
 import os
 import re
 import subprocess
+import shutil
 import time
 import urllib.error
 import urllib.parse
@@ -86,8 +87,12 @@ def crop_last_letter(raw:bytes,alignment:dict,letter:str,folder:Path):
     original=folder/"context_uncropped.mp3"
     original.write_bytes(raw)
     output=folder/"context_cropped.mp3"
+    binary=shutil.which("ffmpeg")
+    if not binary:
+        import imageio_ffmpeg
+        binary=imageio_ffmpeg.get_ffmpeg_exe()
     subprocess.run([
-        "ffmpeg","-y","-hide_banner","-loglevel","error",
+        binary,"-y","-hide_banner","-loglevel","error",
         "-ss",f"{start:.3f}","-to",f"{end:.3f}",
         "-i",str(original),"-af","afade=t=in:st=0:d=0.018",
         "-codec:a","libmp3lame","-q:a","3",str(output),
@@ -171,6 +176,10 @@ def main():
     def generate(name,spoken,model,timestamp=False, letter=None):
         target=args.out/name
         target.parent.mkdir(parents=True,exist_ok=True)
+        if target.exists() and target.stat().st_size>=800:
+            report.append({"file":name,"state":"reused","model":model,"prompt":spoken})
+            print(f"REUSED {name} (no new API request)",flush=True)
+            return
         try:
             audio,alignment=tts(key,spoken,model,timestamp)
             if timestamp and letter:
@@ -193,7 +202,7 @@ def main():
     generate("zebra/zee-bruh.mp3","ZEE-bruh.","eleven_multilingual_v2")
     generate("zebra/cmu.mp3",'<phoneme alphabet="cmu-arpabet" ph="Z IY1 B R AH0">zebra</phoneme>',"eleven_flash_v2")
     make_page(args.out,report)
-    n=sum(x["state"]=="ok" for x in report)
+    n=sum(x["state"] in ("ok","reused") for x in report)
     print(f"Completed {n}/{len(report)} trials; review pronunciation before further generation.",flush=True)
     if n==0:raise SystemExit("No audio produced")
 
