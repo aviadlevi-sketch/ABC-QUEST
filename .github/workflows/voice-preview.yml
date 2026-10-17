@@ -6,7 +6,7 @@ on:
       voice_id:
         description: "ElevenLabs voice ID copied from My Voices (not the API key)"
         required: true
-        default: TYKLc7ViOIGE13dSZYlK
+        default: NoOVOzCQFLOvtsMoNcdT
         type: string
       model_id:
         description: "ElevenLabs model for letter names and words"
