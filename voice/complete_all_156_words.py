@@ -43,8 +43,9 @@ def word_bank(archive: Path):
     categories,_=json.JSONDecoder().raw_decode(page[match.end():])
     if not isinstance(categories,dict) or len(categories)!=26:
         raise RuntimeError("Expected exactly 26 word bank letter categories")
-    catalog=OrderedDict()
+    catalog=[]
     counts={}
+    known_paths=set()
     for letter,rows in categories.items():
         if not isinstance(letter,str) or not re.fullmatch("[A-Z]",letter):
             raise RuntimeError("Unexpected word bank letter: "+repr(letter))
@@ -58,11 +59,14 @@ def word_bank(archive: Path):
             key=display.lower()
             if not re.fullmatch(r"[a-z]+(?:[-'][a-z]+)*",key):
                 raise RuntimeError(f"Unsafe word for filename: {display}")
-            if key in catalog:
-                raise RuntimeError(f"Duplicate word bank word: {key}, letters {catalog[key]['letter']} and {letter}")
-            catalog[key]={"word":display,"letter":letter}
+            rel=f"words/{letter}/{key}.mp3"
+            if rel in known_paths:
+                raise RuntimeError("Duplicate within one letter: "+rel)
+            known_paths.add(rel)
+            catalog.append({"key":key,"word":display,"letter":letter,"file":rel})
     if len(catalog)!=156 or set(counts)!={chr(i) for i in range(65,91)}:
-        raise RuntimeError(f"Expected 156 distinct words across A-Z; found {len(catalog)}")
+        raise RuntimeError(f"Expected 156 word placements across A-Z; found {len(catalog)}")
+    print(f"Validated source list: 156 placements, {len({x['key'] for x in catalog})} unique spoken words",flush=True)
     return catalog
 
 def read_mp3(path: Path):
@@ -88,7 +92,7 @@ def make_mobile_listener(out: Path, records: list):
         for record in all_for_letter:
             name=record["key"]
             label=record["word"]
-            src=embed(out/"words"/(name+".mp3"))
+            src=embed(out/record["file"])
             marker="הגייה שאושרה" if name=="zebra" else ("הקלטה קיימת" if record["source"]=="reused" else "הקלטה חדשה")
             cards.append(
                 '<article><div class="w"><strong dir="ltr">'+html.escape(label)+
@@ -148,12 +152,21 @@ def main():
     manifest=[]
     generated=0
     reused=0
-    for n,(name,metadata) in enumerate(words.items(),1):
-        target=out/"words"/(name+".mp3")
+    repeat_copies=0
+    unique_audio_cache={}
+    for n,metadata in enumerate(words,1):
+        name=metadata["key"]
+        target=out/metadata["file"]
+        target.parent.mkdir(parents=True,exist_ok=True)
         if name=="zebra":
             target.write_bytes(approved)
             origin="approved_zebra"
             print(f"{n:03d}/156 APPROVED Zebra — ZEE-bruh, no API call",flush=True)
+        elif name in unique_audio_cache:
+            target.write_bytes(unique_audio_cache[name])
+            origin="repeated_word_copy"
+            repeat_copies+=1
+            print(f"{n:03d}/156 REPEATED {name}, same audio as earlier category",flush=True)
         elif target.exists() and target.stat().st_size>1000:
             read_mp3(target)
             origin="resumed"
@@ -175,9 +188,10 @@ def main():
                 print(f"{n:03d}/156 GENERATED {name}, {len(audio)} bytes",flush=True)
                 time.sleep(0.15)
         data=read_mp3(target)
+        unique_audio_cache[name]=data
         manifest.append({"letter":metadata["letter"],"key":name,"word":metadata["word"],
-                         "file":"words/"+name+".mp3","source":origin,"bytes":len(data)})
-    files=list((out/"words").glob("*.mp3"))
+                         "file":metadata["file"],"source":origin,"bytes":len(data)})
+    files=list((out/"words").rglob("*.mp3"))
     if len(files)!=156 or len(manifest)!=156:
         raise RuntimeError(f"Word bank/audio inventory mismatch: {len(files)} files, {len(manifest)} records")
     for record in manifest:
@@ -186,7 +200,9 @@ def main():
         "game":"ABC QUEST","voice_id":VOICE_ID,"model_id":MODEL_ID,
         "expected_word_count":156,"actual_word_count":len(manifest),
         "word_count_per_letter":6,"approved_zebra":"ZEE-bruh",
-        "generated_new":generated,"reused_existing":reused,"records":manifest,
+        "generated_new":generated,"reused_existing":reused,
+        "repeated_word_copies":repeat_copies,"distinct_spoken_words":len(unique_audio_cache),
+        "records":manifest,
     },ensure_ascii=False,indent=2),encoding="utf-8")
     make_mobile_listener(out,manifest)
     (out/"README.txt").write_text(
@@ -196,9 +212,9 @@ def main():
         "All MP3 files are inside the words/ folder for later offline Android APK integration.\n"+
         "Zebra uses APPROVED US ZEE-bruh audio. No new phonics or letter name clips generated.\n"+
         "Source: exact word bank read from Android v7.5 ZIP.\n"+
-        f"Reused existing audio: {reused}, newly generated audio: {generated}, zebra separately reused.\n"+
+        f"Reused existing audio: {reused}, newly generated audio: {generated}, repeated words copied: {repeat_copies}, zebra separately reused.\n"+
         "This workflow produces assets only and does not alter the Android app or APK.\n",encoding="utf-8")
-    print(f"SUCCESS: 156/156 unique word recordings; {reused} reused; {generated} generated; Zebra approved.",flush=True)
+    print(f"SUCCESS: 156/156 word placement MP3s, {len(unique_audio_cache)} unique terms, {reused} reused, {generated} generated, {repeat_copies} repeated-word copies, Zebra approved.",flush=True)
 
 if __name__=="__main__":
     main()
