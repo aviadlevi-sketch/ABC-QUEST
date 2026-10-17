@@ -51,12 +51,13 @@ aside{background:#394777;border-radius:12px;padding:14px;margin:16px 0}
 <aside>אותיות A, B, C, M, W, Z הן בדיוק ההקלטות שכבר אישרת. שאר 20 האותיות חדשות ודורשות האזנה ואישור.
 המילה Zebra מופיעה בתחתית בהגיית ZEE-bruh (שיטה A) שאישרת.</aside>
 <div class="grid">'''
-    last=f'''</div><h2>Zebra — הגרסה שאושרה</h2>
+    last='''</div><h2>Zebra — הגרסה שאושרה</h2>
 <div class="grid"><div class="item"><b>Zebra</b><span>ZEE-bruh · שיטה A</span>
-<audio controls preload="none" src="{uri}"></audio></div></div>
+<audio controls preload="none" src="__ZEBRA_URI__"></audio></div></div>
 <p>26 הצלילים הפונטיים יופקו ממקור הקלטות נפרד; אין כאן צלילים מסונתזים שאינם מדויקים.</p>
 <script>document.querySelectorAll("audio").forEach(a=>a.addEventListener("play",()=>document.querySelectorAll("audio").forEach(b=>{if(b!==a&&!b.paused)b.pause()})))</script>
 </body></html>'''
+    last=last.replace("__ZEBRA_URI__",uri)
     page=header+"".join(blocks)+last
     assert page.count("<audio controls")==27
     (folder/"LISTEN_26_LETTER_NAMES_AND_ZEBRA.html").write_text(page,encoding="utf-8")
