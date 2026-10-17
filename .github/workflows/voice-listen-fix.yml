@@ -1,0 +1,48 @@
+name: ABC QUEST - Android voice listening fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/voice-listen-fix.yml'
+      - 'voice/make_standalone_listen.py'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  build-listening-page:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download EXISTING audio preview (no ElevenLabs calls)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p voice-preview
+          gh run download 38917976534 --repo "${{ github.repository }}" --name ABC_QUEST_ElevenLabs_15_voice_samples --dir voice-preview
+          find voice-preview -type f -name '*.mp3' | sort
+          test "$(find voice-preview -type f -name '*.mp3' | wc -l)" -eq 15
+
+      - name: Embed fifteen MP3 recordings in one phone-friendly HTML
+        run: python voice/make_standalone_listen.py voice-preview
+
+      - name: Publish Android listening package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ABC_QUEST_LISTEN_ON_PHONE
+          path: voice-preview/
+          if-no-files-found: error
+          retention-days: 20
