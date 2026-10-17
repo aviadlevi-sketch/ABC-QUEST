@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/complete-letter-names.yml'
+      - 'voice/finish_letter_names.py'
   workflow_dispatch:
 
 permissions:
