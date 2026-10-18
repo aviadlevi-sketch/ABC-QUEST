@@ -76,3 +76,16 @@ padding:9px;border-radius:10px;background:rgba(26,37,100,.75);margin:9px 0}
 .quest76-no-hero-tag{font-size:11px;color:#ffe4a6;font-weight:900}
 .quest76-no-hero .active-hero-visual{background:#173875}
 @media(max-width:390px){.quest76-roster{padding:10px}.quest76-owned-hero{min-width:91px;width:91px;flex-basis:91px}}
+
+/* 7.6.5: realistic 30-practice-day progress, without gating worlds behind calendar days. */
+.quest76-30-day-journey{margin:15px 0;padding:15px;border-radius:19px;
+ background:linear-gradient(145deg,#193b85,#225497);color:white;
+ border:2px solid rgba(255,218,114,.55)}
+.quest76-days-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.quest76-days-head h2{font-size:19px;margin:0;color:white}
+.quest76-days-head b{color:#ffe58d;font-size:16px}
+.quest76-days-meter{height:15px;margin:12px 0 8px;background:#122957;border-radius:99px;
+ border:1px solid rgba(255,255,255,.19);overflow:hidden}
+.quest76-days-meter i{display:block;height:100%;border-radius:99px;
+ background:linear-gradient(90deg,#28d0b7,#ffd768)}
+.quest76-30-day-journey p{font-size:13px;color:#e0ebff;line-height:1.6;margin:6px 0}

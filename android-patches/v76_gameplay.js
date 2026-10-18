@@ -273,6 +273,13 @@ progressPage=function(){
  let out=originalProgress76();
  out=out.replace(/(🎮\s*\d+)\/7\b/g,'$1/10');
  out=out.replace(/(📅\s*\d+)\/2\b/g,'$1/3');
+ const practiced=fameDays(),achieved=Math.min(30,practiced);
+ const bar='<section class="quest76-30-day-journey" aria-label="מסלול תרגול ל-30 ימים">'+
+  '<div class="quest76-days-head"><h2>📅 מסע של 30 ימי תרגול</h2><b>'+achieved+'/30 ימים</b></div>'+
+  '<div class="quest76-days-meter" role="progressbar" aria-valuemin="0" aria-valuemax="30" aria-valuenow="'+achieved+'"><i style="width:'+Math.round(achieved*100/30)+'%"></i></div>'+
+  '<p>כל יום עם ניצחון בתרגול עולם נספר פעם אחת. היעד הוא 30 ימי תרגול מצטברים, לא 30 ימי המתנה רצופים לפתיחת עולם.</p>'+
+  (achieved===30?'<strong>🌟 השלמת את יעד 30 הימים!</strong>':'')+'</section>';
+ out=out.replace('<div class="quest-progress-worlds">',bar+'<div class="quest-progress-worlds">');
  return out;
 };
 const originalFinish76=finishPage;
@@ -394,11 +401,11 @@ window.ABCQuestCrossWorldHeroes={
 };
 
 window.ABCQuestVersion76={
- version:'7.6.3',
+ version:'7.6.5',
  economy:()=>({heroes:HERO_CREDIT_PRICES.map(x=>x.slice()),trophies:HERO_TROPHY_GATES.map(x=>x.slice()),
   skins:SKIN_CREDIT_PRICES.map(x=>x.slice()),fameMax:GLORY[GLORY.length-1].min}),
  modeGoals:()=>MODE_TARGETS.map(x=>({key:x.key,needed:x.required})),
  modeStatus:world=>modeCounts76(world),
 };
-console.info('[ABC QUEST 7.6.3] Free Alpha, six fixed hero prices, 25% / 50% skin discounts.');
+console.info('[ABC QUEST 7.6.5] 30-day practice journey, prices and quest progression preserved.');
 })();

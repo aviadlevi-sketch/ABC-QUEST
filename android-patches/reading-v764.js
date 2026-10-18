@@ -27,7 +27,7 @@ function prompt764(){
    '🎧 לא נקלטו מילים. לחצו שוב על המיקרופון.';
   case 'unsupported':return '⚠️ זיהוי דיבור אינו זמין. ודאו ששירות זיהוי דיבור באנגלית מותקן. ייתכן שנדרש אינטרנט.';
   case 'error':return '⚠️ המיקרופון לא הופעל. בדקו את שירות זיהוי הדיבור ונסו שוב.';
-  default:return '1. הקשיבו לדוגמה. 2. קראו את שמות האותיות למיקרופון. 3. המערכת תבדוק.';
+  default:return '🔊 רוצים לשמוע איך מקריאים? לחצו על ״לשמוע דוגמה״. כשתהיו מוכנים, קראו למיקרופון והמערכת תבדוק.';
  }
 }
 function verifiedGamePage764(){
@@ -118,30 +118,21 @@ startReadingMic=function(){
   r.start();
  }catch(e){recognition=null;readingStatus='error';render();}
 };
-function sampleOnNewQuestion764(q){
- if(!q||q.type!=='read')return;
- setTimeout(()=>{
-  if(active764()&&game.question===q&&!q.answered&&readingStatus===''){
-   try{listenReadSequence();}catch(e){/* Example button remains available. */}
-  }
- },280);
-}
+// The female example is never played automatically: the learner alone decides
+// when to press the dedicated "listen to example" button.
 beginGame=function(...args){
  speechAttempt764++;
  olderBeginGame764(...args);
- if(active764())sampleOnNewQuestion764(game.question);
 };
 nextQuestion=function(...args){
  if(active764()&&!game.question.answered)return; // No skipping unread words.
  speechAttempt764++;
- const last=game?.question;
  olderNextQuestion764(...args);
- if(active764()&&game.question!==last)sampleOnNewQuestion764(game.question);
 };
 window.ABCQuestVerifiedReading764={
- version:'7.6.4',
+ version:'7.6.5',
  getState:()=>({status:readingStatus,matched:readingMatched,
   active:active764(),answered:!!game?.question?.answered}),
 };
-console.info('[ABC QUEST 7.6.4] Recognition-verified reading enabled.');
+console.info('[ABC QUEST 7.6.5] Speech-verified reading; example plays by explicit tap only.');
 })();

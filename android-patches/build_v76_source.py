@@ -226,6 +226,22 @@ def main():
         "scale skin trophies by 2.5 over hero baseline",
     )
 
+    # Extend the displayed total practice journey from ten to thirty actual
+    # practice days. This DOES NOT inflate per-world win/day gates or lock
+    # previously purchased heroes; the 30-day journey is a cumulative target.
+    adventure=replace_exact(
+        adventure,
+        "📅 מסע של כ־10 ימים",
+        "📅 יום ${Math.min(fameDays(),30)} מתוך 30 במסע",
+        "replace obsolete ten-day journey claim in home ribbon",
+    )
+    adventure=replace_exact(
+        adventure,
+        "The 24 levels are tuned for about ten practice days",
+        "The 24 levels form a long-term fame ladder, distinct from the 30-day journey",
+        "fix obsolete ten-day developer comment",
+    )
+
     gameplay_patch=(args.patches/"v76_gameplay.js").read_text(encoding="utf-8")
     reading_patch=(args.patches/"reading-v764.js").read_text(encoding="utf-8")
     if "ABCQuestVersion76" not in gameplay_patch:
@@ -312,16 +328,16 @@ def main():
     activity_path.write_text(activity,encoding="utf-8")
 
     gradle=gradle_file.read_text(encoding="utf-8")
-    gradle=replace_exact(gradle,"versionName '7.5-preview'","versionName '7.6.4-preview'",
+    gradle=replace_exact(gradle,"versionName '7.5-preview'","versionName '7.6.5-preview'",
                          "new versionName")
-    gradle=replace_exact(gradle,"versionCode 12","versionCode 17",
+    gradle=replace_exact(gradle,"versionCode 12","versionCode 18",
                          "increment Android versionCode for in-place update")
     gradle_file.write_text(gradle,encoding="utf-8")
     assert (assets/"offline-audio.js").is_file()
     assert "ABCQuestVersion76" in js_file.read_text(encoding="utf-8")
     assert "ABCQuestVerifiedReading764" in js_file.read_text(encoding="utf-8")
     assert "new JSONArray()" in activity_path.read_text(encoding="utf-8")
-    print("v7.6.4 prepared; 208 MP3; 156 word placements / 155 unique spoken words.")
+    print("v7.6.5 prepared; 208 MP3; 156 word placements / 155 unique spoken words.")
     print("Preserves previous progress; starter Alpha granted at zero cost.")
     print("Android project directory:",root)
     (out/"build_root.txt").write_text(str(root.resolve())+"\n",encoding="utf-8")
