@@ -400,12 +400,35 @@ window.ABCQuestCrossWorldHeroes={
  equipped:()=>ownsHero(progress.equippedHero)?progress.equippedHero:null,
 };
 
+// Explain mastery vs 'I recognize this letter' directly beside the
+// world letter grid. Marking a letter as familiar is not the same as having
+// 80% accuracy in visual, phonics and matching with >=2 attempts each.
+const previousStageLegend767=stagePage;
+stagePage=function(){
+ let output=previousStageLegend767();
+ const letters=stageLetters(selectedStage);
+ const mastered=letters.filter(l=>mastery(l.up)).length;
+ const recognized=letters.filter(l=>progress.learned[l.up]).length;
+ const inPractice=Math.max(0,recognized-mastered);
+ const newCount=Math.max(0,letters.length-recognized);
+ const legend='<div class="quest767-letters-guide" aria-label="הסבר הצבעים של אותיות העולם">'+
+  '<strong>🎨 מה אומרים צבעי האותיות?</strong>'+
+  '<div class="quest767-color-items">'+
+  '<span><i class="quest767-dot green"></i> ירוק — שולטים באות ('+mastered+')</span>'+
+  '<span><i class="quest767-dot yellow"></i> צהוב — הכרנו, ממשיכים לתרגל ('+inPractice+')</span>'+
+  '<span><i class="quest767-dot white"></i> לבן — עוד לא הכרנו ('+newCount+')</span></div>'+
+  '<p>לחיצה על ״הכרתי״ מסמנת את האות בצהוב. היא תהפוך לירוקה לאחר לפחות שתי תשובות ו־80% הצלחה בכל אחד מהתרגולים: זיהוי, שמיעה והתאמה.</p>'+
+  '</div>';
+ const anchor='<div class="letter-grid">';
+ return output.includes(anchor)?output.replace(anchor,legend+anchor):output;
+};
+
 window.ABCQuestVersion76={
- version:'7.6.5',
+ version:'7.6.7',
  economy:()=>({heroes:HERO_CREDIT_PRICES.map(x=>x.slice()),trophies:HERO_TROPHY_GATES.map(x=>x.slice()),
   skins:SKIN_CREDIT_PRICES.map(x=>x.slice()),fameMax:GLORY[GLORY.length-1].min}),
  modeGoals:()=>MODE_TARGETS.map(x=>({key:x.key,needed:x.required})),
  modeStatus:world=>modeCounts76(world),
 };
-console.info('[ABC QUEST 7.6.5] 30-day practice journey, prices and quest progression preserved.');
+console.info('[ABC QUEST 7.6.7] Clear letter mastery legend, prices and quest progression preserved.');
 })();

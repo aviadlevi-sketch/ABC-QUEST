@@ -104,3 +104,19 @@
   border-radius:11px}
  .mobile-nav>.mobile-btn span{font-size:18px!important}
 }
+
+/* v7.6.7: prize dialogs are dismissible; explain yellow vs green in a world. */
+.quest767-reward-x{position:absolute;top:8px;left:10px;min-width:39px;min-height:39px;
+ border:1px solid rgba(255,255,255,.5);border-radius:50%;color:#fff;
+ background:rgba(19,34,85,.85);font-size:20px;font-weight:900;cursor:pointer}
+.quest766-reward-dialog{position:relative}
+.quest767-letters-guide{background:rgba(17,42,115,.83);color:#fff;border-radius:15px;
+ padding:12px 14px;margin:10px 0 15px;border:1px solid rgba(255,255,255,.2)}
+.quest767-letters-guide>strong{display:block;font-size:16px;margin-bottom:9px}
+.quest767-color-items{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.quest767-color-items>span{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:850}
+.quest767-dot{width:12px;height:12px;display:inline-block;border-radius:50%;
+ box-shadow:0 0 0 2px rgba(255,255,255,.15)}
+.quest767-dot.green{background:#35e3c6}.quest767-dot.yellow{background:#ffd35d}
+.quest767-dot.white{background:#d9e3ff}
+.quest767-letters-guide p{font-size:12px;line-height:1.6;color:#dce8ff;margin:9px 0 0}

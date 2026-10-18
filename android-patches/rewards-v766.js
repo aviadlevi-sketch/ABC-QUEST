@@ -99,7 +99,17 @@ function showWin766(title,r){
   overlay.innerHTML='<div class="quest766-reward-dialog"><div class="quest766-reward-spark">🎉 🎁 ✨</div>'+
     '<h2>'+title+'</h2><p>'+describe766(r)+'</p>'+
     (r.badge?'<p>🌟 תג חדש בפרופיל: '+BADGE_766+'</p>':'')+
+    '<button class="quest767-reward-x" type="button" data-action="reward766-close" aria-label="סגירת פרס">✕</button>'+
     '<button class="btn gold-button" data-action="reward766-close">ממשיכים במסע!</button></div>';
+  // The reward overlay is outside #app, so #app's delegated click handler
+  // CANNOT receive these clicks. Attach its own handler to the actual overlay.
+  overlay.addEventListener('click',function(e){
+   const close=e.target.closest?.('[data-action="reward766-close"]');
+   if(close||e.target===overlay){
+    e.preventDefault();
+    overlay.remove();
+   }
+  });
   document.body.appendChild(overlay);
  }else showToast(title+' · '+describe766(r));
 }
@@ -272,9 +282,23 @@ app.addEventListener('click',function(e){
  if(action==='reward766-claim-daily')claimDaily766();
  if(action==='reward766-claim-fame')claimFame766(Number(el.dataset.transition));
 },true);
+// The Android hardware Back button must dismiss a prize overlay before
+// navigating away from the rewards page. No awarded prize is rolled back.
+const previousAndroidBack766=window.abcAndroidBack;
+window.abcAndroidBack=function(...args){
+ const dialog=document.querySelector('.quest766-reward-overlay');
+ if(dialog){dialog.remove();return true;}
+ return typeof previousAndroidBack766==='function'?previousAndroidBack766(...args):false;
+};
+document.addEventListener('keydown',function(e){
+ if(e.key==='Escape'){
+  const dialog=document.querySelector('.quest766-reward-overlay');
+  if(dialog){e.preventDefault();dialog.remove();}
+ }
+});
 loginToday766();
 window.ABCQuestRewards766={
- version:VERSION_766,
+ version:'7.6.7',
  page:rewardsPage766,
  state:()=>({
   loginDates:[...ledger766().loginDates],
@@ -289,5 +313,5 @@ window.ABCQuestRewards766={
  loginReward:rewardData766,fameReward:fameReward766,
  claimLogin:claimLogin766,claimDaily:claimDaily766,claimFame:claimFame766,
  };
-console.info('[ABC QUEST 7.6.6] 30 cumulative login days, daily missions and claimable prestige rewards.');
+console.info('[ABC QUEST 7.6.7] Claimable rewards with working modal dismiss and Android Back.');
 })();
