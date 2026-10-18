@@ -1,0 +1,196 @@
+name: Build ABC QUEST 7.6.10 Stone Explanations Android
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-v7610-android.yml'
+      - 'android-patches/apply_v7610.py'
+      - 'android-patches/v7610_patch.js'
+      - 'android-patches/quest7610.css'
+      - 'android-patches/apply_v769.py'
+      - 'android-patches/v769_patch.js'
+      - 'android-patches/quest769.css'
+      - 'android-patches/apply_v768.py'
+      - 'android-patches/v768_patch.js'
+      - 'android-patches/quest768.css'
+      - 'android-patches/build_v76_source.py'
+      - 'android-patches/v76_gameplay.js'
+      - 'android-patches/rewards-v766.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout game source and versioned patches
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prepare Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Restore the 26 approved letter names
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audio-input/names
+          gh run download 39068236319 --repo "${{ github.repository }}" \
+            --name ABC_QUEST_26_LETTER_NAMES_ZEBRA_APPROVAL --dir audio-input/names
+          test "$(find audio-input/names/names -name '*.mp3' | wc -l)" -eq 26
+
+      - name: Restore the 26 approved phonemes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audio-input/phonemes
+          gh run download 39072546611 --repo "${{ github.repository }}" \
+            --name ABC_QUEST_FINAL_26_PHONEMES_ORIGINAL_X --dir audio-input/phonemes
+          test "$(find audio-input/phonemes/phonemes -name '*.mp3' | wc -l)" -eq 26
+
+      - name: Restore the 156 approved word pronunciations
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audio-input/words
+          gh run download 39072833273 --repo "${{ github.repository }}" \
+            --name ABC_QUEST_COMPLETE_156_WORDS_VOICE2 --dir audio-input/words
+          test "$(find audio-input/words/words -name '*.mp3' | wc -l)" -eq 156
+
+      - name: Generate existing 7.6.7 Android project
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIP="$(find . -maxdepth 2 -type f -name 'ABC_QUEST_Android_v75_*.zip' -print -quit)"
+          test -n "$ZIP"
+          python android-patches/build_v76_source.py \
+            --source-zip "$ZIP" \
+            --project-output "${RUNNER_TEMP}/abcquest-v76" \
+            --patches "$GITHUB_WORKSPACE/android-patches" \
+            --names "$GITHUB_WORKSPACE/audio-input/names" \
+            --phonemes "$GITHUB_WORKSPACE/audio-input/phonemes" \
+            --words "$GITHUB_WORKSPACE/audio-input/words"
+          ROOT="$(cat "${RUNNER_TEMP}/abcquest-v76/build_root.txt")"
+          echo "ABCQUEST_ANDROID_DIR=$ROOT" >> "$GITHUB_ENV"
+          test "$(find "$ROOT/app/src/main/assets/audio" -name '*.mp3' | wc -l)" -eq 208
+
+      - name: Apply the approved 7.6.8 economy and UI changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python android-patches/apply_v768.py \
+            --project "$ABCQUEST_ANDROID_DIR" --patches "$GITHUB_WORKSPACE/android-patches"
+
+      - name: Apply 7.6.9 world stones, bonus rewards, and child help
+        shell: bash
+        run: |
+          set -euo pipefail
+          python android-patches/apply_v769.py \
+            --project "$ABCQUEST_ANDROID_DIR" --patches "$GITHUB_WORKSPACE/android-patches"
+
+      - name: Apply 7.6.10 stone help and hero card price display
+        shell: bash
+        run: |
+          set -euo pipefail
+          python android-patches/apply_v7610.py \
+            --project "$ABCQUEST_ANDROID_DIR" --patches "$GITHUB_WORKSPACE/android-patches"
+
+      - name: Validate 7.6.10 JavaScript, content and save compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$ABCQUEST_ANDROID_DIR"
+          JS="$ROOT/app/src/main/assets/adventure_v73.js"
+          node --check "$JS"
+          node --check "$ROOT/app/src/main/assets/offline-audio.js"
+          node tests/verified-reading-v764.cjs
+          node tests/rewards-v766.cjs
+          node tests/reward-overlay-v767.cjs
+          test -s "$ROOT/app/src/main/assets/quest768.css"
+          test -s "$ROOT/app/src/main/assets/quest769.css"
+          test -s "$ROOT/app/src/main/assets/quest7610.css"
+          grep -q "ABCQuestHeroCards7610" "$JS"
+          grep -q "quest7610.css" "$ROOT/app/src/main/assets/index.html"
+          grep -q "ABCQuestWorldStones769" "$JS"
+          grep -q "stonesEarned=recorded?12:6" "$JS"
+          grep -q "big:\[7,14,21,28,29,30\]" "$JS"
+          grep -q "versionCode 23" "$ROOT/app/build.gradle"
+          grep -q "versionName '7.6.10-preview'" "$ROOT/app/build.gradle"
+          grep -q "ABCQuestEconomy768" "$JS"
+          grep -q "WIN_REWARD_CREDITS=120" "$JS"
+          grep -q "EXTRA_REWARD_CREDITS=60" "$JS"
+          grep -Fq "heroGates:[[0,2600,8500,14000]" "$JS"
+          grep -q "quest768.css" "$ROOT/app/src/main/assets/index.html"
+          grep -q "abc-quest-progress-v1" "$ROOT/app/src/main/assets/index.html"
+          grep -Fq "מסע של 30 ימי תרגול" "$JS"
+          grep -Fq "quest767-reward-x" "$JS"
+          test -s "$ROOT/app/abcquest-test.keystore"
+          echo "Economy, Hebrew child help, version and persistent save checks passed."
+
+      - name: Build test-signed Android APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$ABCQUEST_ANDROID_DIR"
+          gradle --no-daemon :app:assembleDebug
+          test -s app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Publish installable 7.6.10 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ABC_QUEST_v7_6_10_ANDROID_APK
+          path: ${{ env.ABCQUEST_ANDROID_DIR }}/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 60
+
+      - name: Package editable source without build caches
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$(dirname "$ABCQUEST_ANDROID_DIR")"
+          zip -qr "$GITHUB_WORKSPACE/ABC_QUEST_v7_6_10_FULL_SOURCE.zip" \
+            "$(basename "$ABCQUEST_ANDROID_DIR")" \
+            -x '*/.gradle/*' '*/build/*' '*/.idea/*'
+          test -s "$GITHUB_WORKSPACE/ABC_QUEST_v7_6_10_FULL_SOURCE.zip"
+
+      - name: Publish full source project
+        uses: actions/upload-artifact@v4
+        with:
+          name: ABC_QUEST_v7_6_10_FULL_SOURCE
+          path: ABC_QUEST_v7_6_10_FULL_SOURCE.zip
+          if-no-files-found: error
+          retention-days: 60
