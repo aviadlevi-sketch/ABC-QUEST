@@ -1,0 +1,18 @@
+/* ABC QUEST 7.6.10: economy labels and child-friendly stone help. */
+.quest-card-economy .quest7610-stone-card-price{
+ display:inline-flex;align-items:center;justify-content:center;
+ background:#2b225d;border:1px solid #c6aafa;color:#fff2ff;
+ font-weight:900;line-height:1.5;padding:4px 7px;max-width:100%;
+ white-space:normal;overflow-wrap:anywhere;word-break:normal;text-align:center;
+}
+.quest7610-tip h3{font-size:18px;margin:16px 0 7px;color:#26387b}
+.quest7610-tip-purpose{background:#ede5ff;border:2px solid #b7a2ec;border-radius:14px;padding:12px 14px}
+.quest7610-tip-purpose h3{margin:0 0 6px;color:#493089}
+.quest7610-tip-purpose p{margin:0}
+.quest7610-tip-footer-note{border-top:1px solid #d8d5ea;padding-top:12px;font-weight:700}
+@media(max-width:480px){
+ .quest-hero-group .quest-card-economy{display:flex;flex-direction:column;align-items:stretch;gap:5px}
+ .quest-hero-group .quest-card-economy span{font-size:12px}
+ .quest-hero-group .quest-card-economy .quest7610-stone-card-price{font-size:11px}
+ .quest7610-tip h3{font-size:17px}
+}
