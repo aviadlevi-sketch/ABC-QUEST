@@ -244,16 +244,20 @@ def main():
 
     gameplay_patch=(args.patches/"v76_gameplay.js").read_text(encoding="utf-8")
     reading_patch=(args.patches/"reading-v764.js").read_text(encoding="utf-8")
+    reward_patch=(args.patches/"rewards-v766.js").read_text(encoding="utf-8")
     if "ABCQuestVersion76" not in gameplay_patch:
         raise RuntimeError("Gameplay upgrade patch missing")
     if "ABCQuestVerifiedReading764" not in reading_patch:
         raise RuntimeError("Verified microphone reading patch missing")
+    if "ABCQuestRewards766" not in reward_patch:
+        raise RuntimeError("30-day reward engine patch missing")
     last=adventure.rfind("})();")
     if last<0 or len(adventure[last:])>15:
         raise RuntimeError("Cannot locate adventure module closing IIFE")
     adventure=adventure[:last]+("\n/* v7.6 progression, home compass and economy */\n"+
             gameplay_patch+"\n/* v7.6.4: microphone-verified reading */\n"+
-            reading_patch+"\nrender();\n")+adventure[last:]
+            reading_patch+"\n/* v7.6.6: cumulative login and claim-once rewards */\n"+
+            reward_patch+"\nrender();\n")+adventure[last:]
     js_file.write_text(adventure,encoding="utf-8")
 
     # Replace the old Android-TTS fallback (all audios bundled) with direct
@@ -261,13 +265,43 @@ def main():
     shutil.copyfile(args.patches/"offline-audio-v76.js",assets/"offline-audio.js")
     shutil.copyfile(args.patches/"economy-v76.css",assets/"economy_v76.css")
     shutil.copyfile(args.patches/"reading-v764.css",assets/"reading_v764.css")
+    shutil.copyfile(args.patches/"rewards-v766.css",assets/"rewards_v766.css")
     html_page=replace_exact(
         html_page,'<link rel="stylesheet" href="economy_v75.css">',
         '<link rel="stylesheet" href="economy_v75.css">'+
         '<link rel="stylesheet" href="economy_v76.css">'+
-        '<link rel="stylesheet" href="reading_v764.css">',
+        '<link rel="stylesheet" href="reading_v764.css">'+
+        '<link rel="stylesheet" href="rewards_v766.css">',
         "new home quest and rarity badge stylesheet",
     )
+    # Register the new prize-screen without replacing the existing navigation.
+    # The legacy JS renders pages from a known local screens dictionary.
+    html_page=replace_exact(
+        html_page,
+        "{id:'shop',name:'חנות',icon:'🛒'},{id:'progress',name:'הישגים',icon:'🏆'}",
+        "{id:'shop',name:'חנות',icon:'🛒'},{id:'rewards',name:'פרסים',icon:'🎁'},"
+        "{id:'progress',name:'הישגים',icon:'🏆'}",
+        "add rewards sidebar navigation",
+    )
+    html_page=replace_exact(
+        html_page,
+        "shop:shopPage,progress:progressPage",
+        "shop:shopPage,rewards:()=>window.ABCQuestRewards766?.page?.()||'<div>טוענים פרסים...</div>',progress:progressPage",
+        "register rewards page in main screen router",
+    )
+    html_page=replace_exact(
+        html_page,
+        "shop:'החנות',progress:'ההתקדמות שלי'",
+        "shop:'החנות',rewards:'אוצר הפרסים',progress:'ההתקדמות שלי'",
+        "show meaningful header for reward screen",
+    )
+    html_page=replace_exact(
+        html_page,
+        "['home','map','games','heroes','shop'].includes(n.id)",
+        "['home','map','games','heroes','shop','rewards'].includes(n.id)",
+        "make prize board directly accessible on Android bottom navigation",
+    )
+
     index_file.write_text(html_page,encoding="utf-8")
 
     # Android recognizer already delegates microphone permissions to the OS.
@@ -328,16 +362,18 @@ def main():
     activity_path.write_text(activity,encoding="utf-8")
 
     gradle=gradle_file.read_text(encoding="utf-8")
-    gradle=replace_exact(gradle,"versionName '7.5-preview'","versionName '7.6.5-preview'",
+    gradle=replace_exact(gradle,"versionName '7.5-preview'","versionName '7.6.6-preview'",
                          "new versionName")
-    gradle=replace_exact(gradle,"versionCode 12","versionCode 18",
+    gradle=replace_exact(gradle,"versionCode 12","versionCode 19",
                          "increment Android versionCode for in-place update")
     gradle_file.write_text(gradle,encoding="utf-8")
     assert (assets/"offline-audio.js").is_file()
     assert "ABCQuestVersion76" in js_file.read_text(encoding="utf-8")
     assert "ABCQuestVerifiedReading764" in js_file.read_text(encoding="utf-8")
+    assert "ABCQuestRewards766" in js_file.read_text(encoding="utf-8")
+    assert "rewards:'אוצר הפרסים'" in index_file.read_text(encoding="utf-8")
     assert "new JSONArray()" in activity_path.read_text(encoding="utf-8")
-    print("v7.6.5 prepared; 208 MP3; 156 word placements / 155 unique spoken words.")
+    print("v7.6.6 prepared; 208 MP3; 156 word placements / 155 unique spoken words.")
     print("Preserves previous progress; starter Alpha granted at zero cost.")
     print("Android project directory:",root)
     (out/"build_root.txt").write_text(str(root.resolve())+"\n",encoding="utf-8")
