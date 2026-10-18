@@ -1,0 +1,20 @@
+/* ABC QUEST 7.6.9 - world stone badges and child-friendly touch explanations */
+.quest769-info{border:1.5px solid #6a89c1;border-radius:50%;display:inline-flex;vertical-align:middle;align-items:center;justify-content:center;width:27px;height:27px;padding:0;margin-inline-start:6px;background:#ebf6ff;color:#224b90;font-size:19px;font-weight:900;cursor:pointer;line-height:1}
+.quest769-info:focus-visible{outline:3px solid #ffcd5e;outline-offset:3px}
+.quest769-wallet{border:2px solid #8c8bfa;background:linear-gradient(130deg,#1f387d,#342778);padding:15px 16px;border-radius:20px;margin-bottom:12px;color:#fff}
+.quest769-wallet h2{font-size:22px;margin:0 0 6px;color:#fff}.quest769-wallet p{font-size:14px;line-height:1.6;color:#eef1ff;margin:0 0 10px}
+.quest769-wallet-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}.quest769-wallet-item{background:#fff;color:#1b315f;border-radius:12px;display:flex;flex-direction:column;gap:5px;padding:10px;font-size:14px;font-weight:800}.quest769-wallet-item strong{font-size:23px}
+.quest769-tip-layer{position:fixed;inset:0;z-index:30001;background:#06152ddc;display:flex;align-items:center;justify-content:center;padding:14px}
+.quest769-tip{position:relative;background:#f8fcff;color:#183258;max-height:86dvh;overflow-y:auto;width:min(100%,520px);padding:24px 20px;border-radius:22px;border:3px solid #c0b2ff;box-shadow:0 20px 65px #0008}
+.quest769-tip h2{font-size:24px;margin:2px 0 16px}.quest769-tip p{font-size:16px;line-height:1.6;margin:10px 0}.quest769-tip .btn{width:100%;margin-top:12px}
+.quest769-close{position:absolute;left:12px;top:12px;width:40px;height:40px;font-size:24px;font-weight:900;border-radius:12px;border:1px solid #9ab4e0;background:#e7ecff;color:#17386d;cursor:pointer}
+.quest769-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.quest769-choice-item{background:#e8eaff;color:#1b3266;border:2px solid #b4b8e8;cursor:pointer;border-radius:14px;padding:12px 6px;display:flex;flex-direction:column;gap:8px;min-height:84px}
+.quest769-choice-item strong{font-size:17px}.quest769-choice-item small{font-size:12px;line-height:1.5}
+.quest769-choice-item:focus-visible{outline:3px solid orange}.quest769-choice-item:active{transform:scale(.98)}
+.quest769-bonus-label{display:block;font-weight:900;color:#ffecaf;font-size:12px;line-height:1.5}
+.quest766-day.collected .quest769-bonus-label{color:#b9d0ff}.quest769-earned-bonus{background:#f1e7ff;color:#402572;font-size:19px;font-weight:900;border-radius:12px;padding:10px}
+.quest769-earned{background:linear-gradient(135deg,#e5d9ff,#bba0f7)!important;color:#221e58!important}
+.quest768-condition .quest769-info{margin-block:-3px;flex-shrink:0}
+.quest768-skin .quest768-condition{overflow-wrap:anywhere}
+@media(max-width:420px){.quest769-wallet-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.quest769-wallet-item{font-size:12px}.quest769-choices{grid-template-columns:1fr 1fr}.quest769-choice-item strong{font-size:14px}}
