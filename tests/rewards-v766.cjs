@@ -14,7 +14,8 @@ const progress={credits:0,stars:0,worldRecords:{0:{wins:[]},1:{wins:[]},2:{wins:
 const app={addEventListener(){}};
 const document={
  querySelector(){return null;},
- createElement(){return {className:'',innerHTML:'',setAttribute(){}};},
+ createElement(){return {className:'',innerHTML:'',setAttribute(){},addEventListener(){},remove(){}};},
+ addEventListener(){},
  body:{appendChild(){}}
 };
 const env={
